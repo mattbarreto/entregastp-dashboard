@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumen de Cumplimiento - Docentes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --bg-primary: #f8f9fa;
+            --bg-card: #ffffff;
+            --bg-header: #1e293b;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --text-on-dark: #ffffff;
+            --border-color: #dee2e6;
+            --color-verde: #22c55e;
+            --color-amarillo: #eab308;
+            --color-rojo: #ef4444;
+            --color-gris: #d1d5db;
+            --color-azul: #3b82f6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+        .header {
+            background: var(--bg-header);
+            color: var(--text-on-dark);
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header h1 { font-size: 24px; font-weight: 600; }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.15s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--color-verde);
+            color: white;
+        }
+
+        .btn-primary:hover { background: #16a34a; }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .btn-secondary:hover { background: rgba(255,255,255,0.2); }
+
+        .filters {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .filters select {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .table-container {
+            background: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .data-table th {
+            background: #f1f5f9;
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .data-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .data-table tr:hover { background: #f8fafc; }
+
+        .student-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .student-email {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-excelente {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-bueno {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-regular {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .badge-deficiente {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 768px) {
+            .header { flex-direction: column; align-items: flex-start; }
+            .data-table { font-size: 12px; }
+            .data-table th, .data-table td { padding: 10px 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <h1>Resumen de Cumplimiento</h1>
+                <p style="color: rgba(255,255,255,0.7); margin-top: 4px;">Solo visible para docentes</p>
+            </div>
+            <div class="header-actions">
+                <form class="filters" method="get" action="/resumen">
+                    <select name="cohorte" onchange="this.form.submit()">
+                        {% for cohorte in cohortes %}
+                        <option value="{{ cohorte.id }}" {% if selected_cohorte and selected_cohorte.id == cohorte.id %}selected{% endif %}>
+                            {{ cohorte.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+                <a href="/api/exportar-excel{% if selected_cohorte %}?cohorte={{ selected_cohorte.id }}{% endif %}" class="btn btn-primary">
+                    📊 Exportar Excel
+                </a>
+                <a href="/" class="btn btn-secondary">
+                    ← Volver al Dashboard
+                </a>
+            </div>
+        </div>
+
+        {% if resumen %}
+        <!-- Estadísticas -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Estudiantes</div>
+                <div class="stat-value">{{ resumen | length }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Promedio Índice Final</div>
+                <div class="stat-value">{{ (resumen | map(attribute='indice_final') | sum / resumen | length) | round(1) }}%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Excelente/Bueno</div>
+                <div class="stat-value">{{ resumen | selectattr('clasificacion', 'in', ['Excelente', 'Bueno']) | list | length }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">En Riesgo</div>
+                <div class="stat-value" style="color: var(--color-rojo);">{{ resumen | selectattr('clasificacion', 'in', ['Regular', 'Deficiente']) | list | length }}</div>
+            </div>
+        </div>
+
+        <!-- Tabla de resumen -->
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Estudiante</th>
+                        <th>% Semanales</th>
+                        <th>% Integradores</th>
+                        <th>Índice Participación</th>
+                        <th>Índice Final</th>
+                        <th>Clasificación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for estudiante in resumen %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <div class="student-name">{{ estudiante.apellido }}, {{ estudiante.nombre }}</div>
+                            <div class="student-email">{{ estudiante.email }}</div>
+                        </td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="min-width: 40px;">{{ estudiante.porcentaje_semanales }}%</span>
+                                <div class="progress-bar" style="width: 60px;">
+                                    <div class="progress-fill" style="width: {{ estudiante.porcentaje_semanales }}%; background: var(--color-verde);"></div>
+                                </div>
+                            </div>
+                            <small style="color: var(--text-secondary);">{{ estudiante.semanales_a_tiempo }}/{{ estudiante.total_semanales }}</small>
+                        </td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="min-width: 40px;">{{ estudiante.porcentaje_integradores }}%</span>
+                                <div class="progress-bar" style="width: 60px;">
+                                    <div class="progress-fill" style="width: {{ estudiante.porcentaje_integradores }}%; background: var(--color-azul);"></div>
+                                </div>
+                            </div>
+                            <small style="color: var(--text-secondary);">{{ estudiante.integradores_a_tiempo }}/{{ estudiante.total_integradores }}</small>
+                        </td>
+                        <td>
+                            <strong>{{ estudiante.indice_participacion }}%</strong>
+                        </td>
+                        <td>
+                            <strong style="font-size: 16px; color: {% if estudiante.indice_final >= 90 %}var(--color-verde){% elif estudiante.indice_final >= 70 %}var(--color-azul){% elif estudiante.indice_final >= 50 %}var(--color-amarillo){% else %}var(--color-rojo){% endif %};">
+                                {{ estudiante.indice_final }}%
+                            </strong>
+                        </td>
+                        <td>
+                            <span class="badge badge-{{ estudiante.clasificacion.lower() }}">
+                                {{ estudiante.clasificacion }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Leyenda de cálculo -->
+        <div style="margin-top: 24px; padding: 20px; background: var(--bg-card); border-radius: 12px;">
+            <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--text-secondary);">Fórmula de Cálculo</h3>
+            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+                <strong>Índice Final</strong> = (TP Integrador 1 × 40%) + (TP Integrador 2 × 40%) + (Participación × 20%)<br>
+                <strong>Participación</strong> = Entregas semanales a tiempo × 1.0 + Entregas tarde × 0.5<br>
+                <strong>Clasificación:</strong> Excelente (90-100%), Bueno (70-89%), Regular (50-69%), Deficiente (&lt;50%)
+            </p>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <h3>No hay datos para mostrar</h3>
+            <p>Selecciona una cohorte con estudiantes y actividades.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Footer -->
+    <footer style="background: #1e293b; color: rgba(255,255,255,0.6); padding: 16px; text-align: center; font-size: 12px; margin-top: 24px;">
+        <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: center; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <span>v1.0.0</span>
+            <span>|</span>
+            <span>Desarrollado por <a href="https://www.matiasbarreto.com" target="_blank" style="color: #60a5fa; text-decoration: none;">Matías Barreto</a></span>
+            <span>|</span>
+            <a href="/faq" style="color: #60a5fa; text-decoration: none;">¿Necesitas ayuda?</a>
+        </div>
+    </footer>
+</body>
+</html>

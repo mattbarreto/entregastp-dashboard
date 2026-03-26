@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ - Preguntas Frecuentes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --bg-primary: #f8f9fa;
+            --bg-card: #ffffff;
+            --bg-header: #1e293b;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --text-on-dark: #ffffff;
+            --border-color: #dee2e6;
+            --color-verde: #22c55e;
+            --color-azul: #3b82f6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+
+        .header {
+            background: var(--bg-header);
+            color: var(--text-on-dark);
+            padding: 32px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .header h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+        .header p { color: rgba(255,255,255,0.7); }
+
+        .nav {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+        }
+
+        .nav a {
+            padding: 10px 20px;
+            background: white;
+            color: var(--text-primary);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.15s;
+        }
+
+        .nav a:hover { background: var(--bg-header); color: white; }
+
+        .faq-section {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .faq-section h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--bg-header);
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .faq-item {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .faq-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .faq-question {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .faq-question::before {
+            content: "❓";
+            flex-shrink: 0;
+        }
+
+        .faq-answer {
+            color: var(--text-secondary);
+            font-size: 14px;
+            padding-left: 32px;
+        }
+
+        .faq-answer code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        .faq-answer strong {
+            color: var(--text-primary);
+        }
+
+        .tip {
+            background: #dbeafe;
+            border-left: 4px solid var(--color-azul);
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+            margin-top: 12px;
+            font-size: 13px;
+        }
+
+        .tip::before {
+            content: "💡 ";
+            font-weight: 600;
+        }
+
+        .warning {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+            margin-top: 12px;
+            font-size: 13px;
+        }
+
+        .warning::before {
+            content: "⚠️ ";
+            font-weight: 600;
+        }
+
+        footer {
+            background: var(--bg-header);
+            color: rgba(255,255,255,0.6);
+            padding: 16px;
+            text-align: center;
+            font-size: 12px;
+            margin-top: 32px;
+        }
+
+        footer a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Preguntas Frecuentes</h1>
+            <p>Guía de uso del Sistema de Seguimiento de Entregas</p>
+        </div>
+
+        <!-- Navegación -->
+        <div class="nav">
+            <a href="/">📊 Dashboard</a>
+            <a href="/resumen">📈 Resumen</a>
+            <a href="/faq" style="background: var(--bg-header); color: white;">❓ FAQ</a>
+        </div>
+
+        <!-- Sección: General -->
+        <div class="faq-section">
+            <h2>📌 General</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">¿Qué es este sistema?</div>
+                <div class="faq-answer">
+                    Es una plataforma self-hosted para el seguimiento de entregas de estudiantes en cursos de tecnicatura superior. Permite a los docentes y ayudantes visualizar el estado de las entregas semanales y trabajos prácticos integradores.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">¿Quién puede acceder al sistema?</div>
+                <div class="faq-answer">
+                    <strong>Estudiantes:</strong> Acceden únicamente al formulario de entregas (público).<br>
+                    <strong>Docentes/Ayudantes:</strong> Acceden al panel de administración de NocoDB y al Dashboard de seguimiento.
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección: Gestión de Cohortes -->
+        <div class="faq-section">
+            <h2>👥 Gestión de Cohortes</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">¿Cómo creo una nueva cohorte?</div>
+                <div class="faq-answer">
+                    1. Accede a NocoDB (<code>http://localhost:8080</code>)<br>
+                    2. Ve a la tabla <strong>Cohortes</strong><br>
+                    3. Haz clic en <strong>+ Nuevo</strong><br>
+                    4. Completa los campos: Nombre, Curso, Cuatrimestre, Año, Fechas<br>
+                    5. Marca <strong>Activa</strong> para que aparezca en el dashboard
+                    <div class="tip">Usa nombres descriptivos como "2026-Q1-Redes" para identificar fácilmente cada cohorte.</div>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">¿Cómo desactivo una cohorte que ya terminó?</div>
+                <div class="faq-answer">
+                    Edita la cohorte en NocoDB y desmarca el checkbox <strong>Activa</strong>. Esto la ocultará del dashboard pero conservará todos los datos para consultas futuras.
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección: Estudiantes -->
+        <div class="faq-section">
+            <h2>🎓 Gestión de Estudiantes</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">¿Cómo cargo estudiantes desde CSV?</div>
+                <div class="faq-answer">
+                    1. Prepara un archivo CSV con columnas: <code>Nombre,Apellido,Email,GitHub</code><br>
+                    2. En NocoDB, tabla <strong>Estudiantes</strong>, haz clic en los tres puntos (⋯)<br>
+                    3. Selecciona <strong>Importar CSV</strong><br>
+                    4. Selecciona el archivo y mapea las columnas<br>
+                    5. Asigna la cohorte correspondiente a todos los importados
+                    <div class="warning">Asegúrate de que el campo GitHub incluya la URL completa (https://github.com/usuario)</div>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">¿Puedo agregar estudiantes individualmente?</div>
+                <div class="faq-answer">
+                    Sí. En la tabla <strong>Estudiantes</strong> de NocoDB, haz clic en <strong>+ Nuevo</strong> y completa los campos manualmente.
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección: Actividades -->
+        <div class="faq-section">
+            <h2>📚 Gestión de Actividades</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">¿Cómo creo una nueva semana/actividad?</div>
+                <div class="faq-answer">
+                    1. En NocoDB, ve a la tabla <strong>Actividades</strong><br>
+                    2. Haz clic en <strong>+ Nuevo</strong><br>
+                    3. Completa:
+                    <ul style="margin: 8px 0; padding-left: 20px;">
+                        <li><strong>Nombre:</strong> "Semana 6", "TP Integrador 1", etc.</li>
+                        <li><strong>Orden:</strong> número secuencial (1, 2, 3...)</li>
+                        <li><strong>Tipo:</strong> "Semanal" o "Integrador"</li>
+                        <li><strong>Peso:</strong> 1 para semanales, 10 para integradores</li>
+                        <li><strong>Fecha Límite:</strong> deadline de la entrega</li>
+                        <li><strong>URL Guía:</strong> link al Colab o documento</li>
+                    </ul>
+                    4. Asigna a la cohorte correspondiente
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">¿Qué diferencia hay entre "Semanal" e "Integrador"?</div>
+                <div class="faq-answer">
+                    <strong>Semanal:</strong> Actividades de práctica que miden participación activa. Pesan 20% en la calificación final.<br>
+                    <strong>Integrador:</strong> Trabajos prácticos evaluativos. Cada uno pesa 40% en la calificación final.<br><br>
+                    El sistema calcula automáticamente el índice final ponderado.
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección: Corrección -->
+        <div class="faq-section">
+            <h2>✅ Corrección de Entregas</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">¿Cómo corrijo una entrega?</div>
+                <div class="faq-answer">
+                    1. Accede a la tabla <strong>Entregas</strong> en NocoDB<br>
+                    2. Busca la entrega por estudiante o actividad<br>
+                    3. Cambia el campo <strong>Estado</strong>:
+                    <ul style="margin: 8px 0; padding-left: 20px;">
+                        <li><strong>Entregado</strong> → Recibido, pendiente de corrección</li>
+                        <li><strong>Corregido</strong> → Revisado y aprobado</li>
+                        <li><strong>Rehacer</strong> → Debe corregir y reenviar</li>
+                        <li><strong>No entregado</strong> → No se recibió</li>
+                    </ul>
+                    4. Agrega <strong>Observaciones</strong> si es necesario
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">¿Cómo sé si una entrega fue tarde?</div>
+                <div class="faq-answer">
+                    El sistema compara automáticamente la <strong>Fecha Entrega</strong> (cuando el estudiante envió) con la <strong>Fecha Límite</strong> de la actividad. En el dashboard se muestran:
+                    <ul style="margin: 8px 0; padding-left: 20px;">
+                        <li>🟢 Verde: Entregado a tiempo</li>
+                        <li>🟡 Amarillo: Entregado tarde</li>
+                        <li>🔴 Rojo: No entregado (vencido)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección: Dashboard -->
+        <div class="faq-section">
+            <h2>📊 Uso del Dashboard</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">¿Cómo veo el detalle de un estudiante?</div>
+                <div class="faq-answer">
+                    Haz clic en el nombre del estudiante en la primera columna del dashboard. Se abrirá un panel lateral con:
+                    <ul style="margin: 8px 0; padding-left: 20px;">
+                        <li>Email y GitHub</li>
+                        <li>Listado completo de entregas</li>
+                        <li>Estado de cada entrega</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">¿Qué muestra la vista de Resumen?</div>
+                <div class="faq-answer">
+                    La vista <strong>/resumen</strong> es exclusiva para docentes y muestra:
+                    <ul style="margin: 8px 0; padding-left: 20px;">
+                        <li>Ranking de estudiantes por índice de cumplimiento</li>
+                        <li>Porcentaje de entregas semanales e integradores</li>
+                        <li>Índice final ponderado (40% TP1 + 40% TP2 + 20% participación)</li>
+                        <li>Clasificación: Excelente, Bueno, Regular, Deficiente</li>
+                        <li>Exportación a Excel</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">¿Cómo exporto a Excel?</div>
+                <div class="faq-answer">
+                    En la vista <strong>Resumen</strong>, haz clic en el botón <strong>📊 Exportar Excel</strong>. Se descargará un archivo con dos hojas:
+                    <ul style="margin: 8px 0; padding-left: 20px;">
+                        <li><strong>Resumen:</strong> Una fila por estudiante con métricas</li>
+                        <li><strong>Detalle:</strong> Todas las entregas con estado</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección: Troubleshooting -->
+        <div class="faq-section">
+            <h2>🔧 Troubleshooting</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">El dashboard muestra "No hay datos para mostrar"</div>
+                <div class="faq-answer">
+                    Verifica que:<br>
+                    1. Exista al menos una cohorte activa<br>
+                    2. La cohorte tenga estudiantes asignados<br>
+                    3. La cohorte tenga actividades creadas<br>
+                    4. La variable de entorno <code>NOCODB_DB_PATH</code> apunte a la base correcta
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Error "database is locked"</div>
+                <div class="faq-answer">
+                    Esto ocurre cuando NocoDB y el Dashboard intentan escribir/leer simultáneamente. El sistema ya tiene timeout de 20 segundos. Si persiste:<br>
+                    1. Reinicia el contenedor de NocoDB: <code>docker restart nocodb</code><br>
+                    2. Espera 30 segundos antes de acceder al dashboard
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Los estudiantes no pueden ver el formulario</div>
+                <div class="faq-answer">
+                    1. En NocoDB, ve a la tabla <strong>Entregas</strong><br>
+                    2. Crea una <strong>Form View</strong><br>
+                    3. Configura los campos visibles: Estudiante, Actividad, URL Entrega, Archivo<br>
+                    4. Comparte la URL pública del formulario con los estudiantes
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Las columnas no aparecen correctamente en el dashboard</div>
+                <div class="faq-answer">
+                    El dashboard usa <strong>descubrimiento de schema</strong> automático. Si los nombres de columna cambiaron en NocoDB:<br>
+                    1. Reinicia el contenedor del dashboard<br>
+                    2. El sistema releerá los metadatos al iniciar
+                </div>
+            </div>
+        </div>
+
+        <!-- Contacto -->
+        <div class="faq-section" style="text-align: center;">
+            <h2>📧 ¿Necesitas más ayuda?</h2>
+            <p style="color: var(--text-secondary); margin-top: 12px;">
+                Contacta a <strong>Matías Barreto</strong><br>
+                <a href="https://www.matiasbarreto.com" target="_blank" style="color: var(--color-azul);">www.matiasbarreto.com</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div style="display: flex; justify-content: center; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <span>v1.0.0</span>
+            <span>|</span>
+            <span>Desarrollado por <a href="https://www.matiasbarreto.com" target="_blank">Matías Barreto</a></span>
+            <span>|</span>
+            <a href="/">Dashboard</a>
+            <span>|</span>
+            <a href="/resumen">Resumen</a>
+        </div>
+    </footer>
+</body>
+</html>

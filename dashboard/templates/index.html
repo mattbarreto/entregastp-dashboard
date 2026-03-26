@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seguimiento de Entregas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Variables de color */
+        :root {
+            --bg-primary: #f8f9fa;
+            --bg-card: #ffffff;
+            --bg-header: #1e293b;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --text-on-dark: #ffffff;
+            --border-color: #dee2e6;
+            
+            /* Colores de estado */
+            --color-verde: #22c55e;
+            --color-amarillo: #eab308;
+            --color-rojo: #ef4444;
+            --color-gris: #d1d5db;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        /* Header */
+        .dashboard-header {
+            background: var(--bg-header);
+            color: var(--text-on-dark);
+            padding: 20px 24px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .dashboard-header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        /* Filtros */
+        .filters {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-group label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .filter-group select {
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-on-dark);
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .filter-group select option {
+            background: var(--bg-header);
+            color: var(--text-on-dark);
+        }
+
+        /* Contenedor de tabla con scroll */
+        .table-container {
+            background: var(--bg-card);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            overflow: auto;
+            max-height: 80vh;
+        }
+
+        /* Tabla principal */
+        .matrix-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 13px;
+            min-width: 100%;
+        }
+
+        /* Headers */
+        .matrix-table th {
+            background: #f1f5f9;
+            border-bottom: 2px solid var(--border-color);
+            padding: 12px 8px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        /* Header esquina (sticky en ambas direcciones) */
+        .matrix-table th.corner {
+            background: #e2e8f0;
+            position: sticky;
+            left: 0;
+            z-index: 20;
+        }
+
+        /* Header de actividades */
+        .matrix-table th.activity-header {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            min-width: 48px;
+            max-width: 48px;
+            height: 140px;
+            vertical-align: bottom;
+            text-align: left;
+            padding: 12px 6px;
+            font-size: 11px;
+        }
+
+        /* Celdas */
+        .matrix-table td {
+            border-bottom: 1px solid #f0f0f0;
+            border-right: 1px solid #f0f0f0;
+            padding: 0;
+            text-align: center;
+        }
+
+        /* Columna de estudiante (sticky left) - compacta */
+        .matrix-table td.student-cell {
+            background: #ffffff;
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            padding: 8px 10px;
+            text-align: left;
+            font-weight: 500;
+            border-right: 1px solid var(--border-color);
+            min-width: 140px;
+            max-width: 160px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+
+        .matrix-table td.student-cell:hover {
+            background-color: #f8fafc;
+        }
+
+        .matrix-table td.student-cell .student-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 12px;
+        }
+
+        /* Panel lateral */
+        .side-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 380px;
+            height: 100vh;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .side-panel.open {
+            right: 0;
+        }
+
+        .side-panel-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .side-panel-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .side-panel-header {
+            background: var(--bg-header);
+            color: white;
+            padding: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .side-panel-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background 0.15s;
+        }
+
+        .side-panel-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .side-panel-content {
+            padding: 20px;
+        }
+
+        .student-detail-section {
+            margin-bottom: 24px;
+        }
+
+        .student-detail-section h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .student-detail-value {
+            font-size: 14px;
+            color: var(--text-primary);
+            word-break: break-word;
+        }
+
+        .student-detail-value a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+
+        .student-detail-value a:hover {
+            text-decoration: underline;
+        }
+
+        .entregas-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .entrega-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+            border-left: 3px solid var(--color-gris);
+        }
+
+        .entrega-item.entregado {
+            border-left-color: var(--color-verde);
+        }
+
+        .entrega-item.tarde {
+            border-left-color: var(--color-amarillo);
+        }
+
+        .entrega-item.no-entregado {
+            border-left-color: var(--color-rojo);
+        }
+
+        .entrega-status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .entrega-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .entrega-actividad {
+            font-weight: 500;
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        .entrega-fecha {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* Celdas de estado */
+        .matrix-table td.status-cell {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            min-height: 40px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .matrix-table td.status-cell:hover {
+            transform: scale(1.1);
+            z-index: 1;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Estados de color */
+        .status-verde {
+            background-color: var(--color-verde);
+            color: white;
+        }
+
+        .status-amarillo {
+            background-color: var(--color-amarillo);
+            color: #1f2937;
+        }
+
+        .status-rojo {
+            background-color: var(--color-rojo);
+            color: white;
+        }
+
+        .status-gris {
+            background-color: var(--color-gris);
+            color: #374151;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2937;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .tooltip:hover::after {
+            opacity: 1;
+        }
+
+        /* Leyenda */
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 16px;
+            padding: 12px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        /* Estado vacío */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .matrix-table th.activity-header {
+                height: 80px;
+                min-width: 32px;
+                max-width: 32px;
+            }
+
+            .matrix-table td.status-cell {
+                width: 32px;
+                height: 32px;
+                min-width: 32px;
+                min-height: 32px;
+            }
+
+            .legend {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <h1>Seguimiento de Entregas</h1>
+            <form class="filters" method="get" action="/">
+                <div class="filter-group">
+                    <label for="cohorte">Cohorte:</label>
+                    <select name="cohorte" id="cohorte" onchange="this.form.submit()">
+                        {% for cohorte in cohortes %}
+                        <option value="{{ cohorte.id }}" {% if selected_cohorte and selected_cohorte.id == cohorte.id %}selected{% endif %}>
+                            {{ cohorte.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </header>
+
+        <!-- Tabla matriz -->
+        {% if students and activities %}
+        <div class="table-container">
+            <table class="matrix-table">
+                <thead>
+                    <tr>
+                        <th class="corner">Estudiante</th>
+                        {% for activity in activities %}
+                        <th class="activity-header" title="{{ activity.nombre }}">
+                            {{ activity.nombre }}
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td class="student-cell" onclick="openStudentPanel({{ student.id }})">
+                            <div class="student-name">{{ student.apellido }}, {{ student.nombre }}</div>
+                        </td>
+                        {% for activity in activities %}
+                        {% set cell = cells.get((student.id, activity.id)) %}
+                        {% if cell %}
+                        <td class="status-cell tooltip status-{{ 'verde' if cell.color == '#22c55e' else 'amarillo' if cell.color == '#eab308' else 'rojo' if cell.color == '#ef4444' else 'gris' }}"
+                            data-tooltip="{{ cell.tooltip }}"
+                            {% if cell.url %}onclick="window.open('{{ cell.url }}', '_blank')"{% endif %}>
+                            {{ cell.label }}
+                        </td>
+                        {% else %}
+                        <td class="status-cell status-gris">−</td>
+                        {% endif %}
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Leyenda -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #22c55e;"></div>
+                <span>Entregado / Corregido</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #eab308;"></div>
+                <span>Entregado tarde / Rehacer</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ef4444;"></div>
+                <span>No entregado (vencido)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #d1d5db;"></div>
+                <span>Pendiente</span>
+            </div>
+        </div>
+        {% else %}
+        <!-- Estado vacío -->
+        <div class="empty-state">
+            <h3>No hay datos para mostrar</h3>
+            <p>Selecciona una cohorte o verifica que existan estudiantes y actividades.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Overlay del panel lateral -->
+    <div class="side-panel-overlay" id="panelOverlay" onclick="closeStudentPanel()"></div>
+
+    <!-- Panel lateral -->
+    <div class="side-panel" id="studentPanel">
+        <div class="side-panel-header">
+            <h2 id="panelStudentName">Estudiante</h2>
+            <button class="side-panel-close" onclick="closeStudentPanel()">&times;</button>
+        </div>
+        <div class="side-panel-content">
+            <div class="student-detail-section">
+                <h3>Email</h3>
+                <div class="student-detail-value" id="panelStudentEmail">-</div>
+            </div>
+            <div class="student-detail-section">
+                <h3>GitHub</h3>
+                <div class="student-detail-value">
+                    <a id="panelStudentGithub" href="#" target="_blank">-</a>
+                </div>
+            </div>
+            <div class="student-detail-section">
+                <h3>Entregas</h3>
+                <div class="entregas-list" id="panelEntregasList">
+                    <!-- Se llena dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Datos de estudiantes pasados desde Flask
+        const studentsData = {{ students_data | tojson }};
+        const entregasPorEstudiante = {{ entregas_por_estudiante | tojson }};
+
+        function openStudentPanel(studentId) {
+            const student = studentsData[studentId];
+            if (!student) return;
+
+            // Llenar datos del estudiante
+            document.getElementById('panelStudentName').textContent =
+                student.apellido + ', ' + student.nombre;
+            document.getElementById('panelStudentEmail').textContent =
+                student.email || 'No disponible';
+
+            const githubLink = document.getElementById('panelStudentGithub');
+            if (student.github) {
+                githubLink.href = student.github;
+                githubLink.textContent = student.github.replace('https://github.com/', '@');
+            } else {
+                githubLink.href = '#';
+                githubLink.textContent = 'No disponible';
+            }
+
+            // Llenar lista de entregas
+            const entregasList = document.getElementById('panelEntregasList');
+            entregasList.innerHTML = '';
+
+            const entregas = entregasPorEstudiante[studentId] || [];
+            if (entregas.length === 0) {
+                entregasList.innerHTML = '<p style="color: var(--text-secondary); font-size: 13px;">Sin entregas registradas</p>';
+            } else {
+                entregas.forEach(entrega => {
+                    const item = document.createElement('div');
+                    let statusClass = 'no-entregado';
+                    if (entrega.estado === 'Entregado' || entrega.estado === 'Corregido') {
+                        statusClass = 'entregado';
+                    } else if (entrega.estado === 'Entregado tarde' || entrega.estado === 'Rehacer') {
+                        statusClass = 'tarde';
+                    }
+
+                    item.className = 'entrega-item ' + statusClass;
+                    item.innerHTML = `
+                        <div class="entrega-status-dot" style="background-color: ${entrega.color};"></div>
+                        <div class="entrega-info">
+                            <div class="entrega-actividad">${entrega.actividad}</div>
+                            <div class="entrega-fecha">${entrega.estado}${entrega.fecha ? ' • ' + entrega.fecha : ''}</div>
+                        </div>
+                    `;
+                    entregasList.appendChild(item);
+                });
+            }
+
+            // Abrir panel
+            document.getElementById('studentPanel').classList.add('open');
+            document.getElementById('panelOverlay').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeStudentPanel() {
+            document.getElementById('studentPanel').classList.remove('open');
+            document.getElementById('panelOverlay').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        // Cerrar con tecla Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeStudentPanel();
+            }
+        });
+    </script>
+
+    <!-- Footer -->
+    <footer style="background: #1e293b; color: rgba(255,255,255,0.6); padding: 16px; text-align: center; font-size: 12px; margin-top: 24px;">
+        <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: center; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <span>v1.0.0</span>
+            <span>|</span>
+            <span>Desarrollado por <a href="https://www.matiasbarreto.com" target="_blank" style="color: #60a5fa; text-decoration: none;">Matías Barreto</a></span>
+            <span>|</span>
+            <a href="/faq" style="color: #60a5fa; text-decoration: none;">¿Necesitas ayuda?</a>
+        </div>
+    </footer>
+</body>
+</html>

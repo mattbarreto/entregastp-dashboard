@@ -37,13 +37,16 @@ def get_db():
     Cierra la conexión en finally de la ruta.
     """
     try:
-        uri = f"file:{DB_PATH}?mode=ro"
-        conn = sqlite3.connect(uri, uri=True, timeout=20.0)
+        # En Docker usamos URI para modo ro
+        if os.path.exists(DB_PATH):
+            uri = f"file:{DB_PATH}?mode=ro"
+            conn = sqlite3.connect(uri, uri=True, timeout=20.0)
+        else:
+            conn = sqlite3.connect(DB_PATH, timeout=20.0)
         conn.row_factory = sqlite3.Row
         return conn
     except Exception as e:
         logger.error(f"Error conectando a la base de datos: {e}")
-        # Intentar conexión normal si URI falla
         conn = sqlite3.connect(DB_PATH, timeout=20.0)
         conn.row_factory = sqlite3.Row
         return conn
@@ -92,7 +95,6 @@ def discover_schema(conn: sqlite3.Connection) -> Dict[str, Dict[str, Any]]:
                     }
 
             if schema:
-                logger.info(f"Schema descubierto: {list(schema.keys())}")
                 return schema
 
     except Exception as e:
@@ -243,17 +245,20 @@ def compute_cell(entrega: Optional[Dict], fecha_limite_str: Optional[str], now: 
     
     if not entrega:
         if fecha_limite and fecha_limite < now:
-            return {'color': COLOR_ROJO, 'status': 'No entregado', 'label': '✗'}
-        return {'color': COLOR_GRIS, 'status': 'Pendiente', 'label': '−'}
+            return {'color': COLOR_ROJO, 'status': 'No entregado', 'label': '✗', 'tooltip': 'No entregado'}
+        return {'color': COLOR_GRIS, 'status': 'Pendiente', 'label': '−', 'tooltip': 'Pendiente'}
 
     estado = entrega.get('estado', 'Entregado')
     fecha_entrega = parse_date(entrega.get('fecha_entrega'))
     esta_tarde = (fecha_entrega > fecha_limite) if (fecha_entrega and fecha_limite) else False
+    
+    tooltip = f"{estado}"
+    if fecha_entrega: tooltip += f" ({fecha_entrega.strftime('%d/%m')})"
 
-    if estado == 'Corregido': return {'color': COLOR_VERDE, 'status': 'Corregido', 'label': '✓'}
-    if estado == 'Rehacer': return {'color': COLOR_AMARILLO, 'status': 'Rehacer', 'label': '↻'}
-    if esta_tarde: return {'color': COLOR_AMARILLO, 'status': 'Tarde', 'label': '⚠'}
-    return {'color': COLOR_VERDE, 'status': 'Entregado', 'label': '✓'}
+    if estado == 'Corregido': return {'color': COLOR_VERDE, 'status': 'Corregido', 'label': '✓', 'tooltip': tooltip}
+    if estado == 'Rehacer': return {'color': COLOR_AMARILLO, 'status': 'Rehacer', 'label': '↻', 'tooltip': tooltip}
+    if esta_tarde: return {'color': COLOR_AMARILLO, 'status': 'Tarde', 'label': '⚠', 'tooltip': tooltip}
+    return {'color': COLOR_VERDE, 'status': 'Entregado', 'label': '✓', 'tooltip': tooltip}
 
 
 @app.route('/')
@@ -269,17 +274,31 @@ def index():
         selected_cohorte = next((c for c in cohortes if c['id'] == cohorte_id), None)
         students, activities, cells = ([], [], {})
         processed_cells = {}
+        students_data = {}
+        entregas_por_estudiante = {}
 
         if cohorte_id:
             students, activities, cells = get_matrix_data(conn, schema, cohorte_id)
             now = datetime.now()
+            
             for s in students:
+                students_data[s['id']] = s
+                entregas_por_estudiante[s['id']] = []
                 for a in activities:
                     key = (s['id'], a['id'])
-                    processed_cells[key] = compute_cell(cells.get(key), a.get('fecha_limite'), now)
+                    cell = compute_cell(cells.get(key), a.get('fecha_limite'), now)
+                    processed_cells[key] = cell
+                    
+                    entregas_por_estudiante[s['id']].append({
+                        'actividad': a['nombre'],
+                        'estado': cell['status'],
+                        'color': cell['color'],
+                        'tooltip': cell['tooltip']
+                    })
 
         return render_template('index.html', cohortes=cohortes, selected_cohorte=selected_cohorte, 
-                               students=students, activities=activities, cells=processed_cells)
+                               students=students, activities=activities, cells=processed_cells,
+                               students_data=students_data, entregas_por_estudiante=entregas_por_estudiante)
     finally:
         conn.close()
 

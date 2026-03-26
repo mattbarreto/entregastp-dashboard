@@ -1,429 +1,217 @@
 # Sistema de Seguimiento de Entregas - IFTS
 
-![Versión](https://img.shields.io/badge/version-1.0.0-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Docker](https://img.shields.io/badge/docker-ready-blue)
+<div align="center">
 
-Sistema self-hosted para seguimiento de entregas de estudiantes en cursos de tecnicatura superior.
+![Versión](https://img.shields.io/badge/version-1.0.0-blue.svg?style=for-the-badge)
+![License](https://img.shields.io/badge/license-MIT-green.svg?style=for-the-badge)
+![Docker](https://img.shields.io/badge/docker-ready-blue.svg?style=for-the-badge&logo=docker)
+![Python](https://img.shields.io/badge/python-3.11-blue.svg?style=for-the-badge&logo=python)
+![Flask](https://img.shields.io/badge/flask-%23000.svg?style=for-the-badge&logo=flask&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![NocoDB](https://img.shields.io/badge/nocodb-v0.250+-orange.svg?style=for-the-badge)
+
+</div>
+
+Sistema *self-hosted* integral para el seguimiento y gestión de entregas de estudiantes en cursos de tecnicatura superior. Combina la potencia No-Code de NocoDB para la carga de datos con un Dashboard en Flask a medida para la visualización y análisis de progreso.
 
 **Desarrollado por:** Matías Barreto  
-**Web:** [www.matiasbarreto.com](https://www.matiasbarreto.com)  
-**Versión:** v1.0.0
+**Web:** [www.matiasbarreto.com](https://www.matiasbarreto.com)
 
 ---
 
 ## 📋 Tabla de Contenidos
 
 - [Descripción](#-descripción)
-- [Tecnologías](#-tecnologías)
+- [Características Principales](#-características-principales)
 - [Arquitectura](#-arquitectura)
-- [Instalación](#-instalación)
-- [Configuración](#-configuración)
-- [Guía para Ayudantes](#-guía-para-ayudantes)
-- [FAQ](#-faq)
-- [Troubleshooting](#-troubleshooting)
-- [Desarrollo](#-desarrollo)
+- [Requisitos Previos](#-requisitos-previos)
+- [Instalación y Despliegue](#-instalación-y-despliegue)
+- [Configuración de NocoDB (Importante)](#%EF%B8%8F-configuración-de-nocodb-importante)
+  - [1. Creación de Tablas](#1-creación-de-tablas)
+  - [2. Configuración de Columnas y Relaciones](#2-configuración-de-columnas-y-relaciones)
+- [Guía Rápida de Uso](#-guía-rápida-de-uso)
+- [Desarrollo Local](#-desarrollo-local)
+- [Solución de Problemas (Troubleshooting)](#-solución-de-problemas-troubleshooting)
 - [Licencia](#-licencia)
 
 ---
 
 ## 📝 Descripción
 
-Este sistema permite a docentes y ayudantes de tecnicaturas superiores:
+Este sistema permite a docentes y ayudantes de tecnicaturas superiores llevar un control riguroso, centralizado y visual del progreso de sus alumnos. 
 
-- 📊 **Visualizar** el estado de entregas de todos los estudiantes en una matriz intuitiva
-- 🎯 **Calcular** índices de cumplimiento ponderados (semanales vs. integradores)
-- 📈 **Identificar** estudiantes en riesgo de forma temprana
-- 📤 **Exportar** reportes completos a Excel
-- 🔗 **Centralizar** enlaces a guías y recursos por actividad
+A través de **NocoDB**, se generan formularios públicos para que los estudiantes suban sus trabajos sin necesidad de login. Por otro lado, el **Dashboard Flask** consume esta base de datos en tiempo real (modo solo lectura) para renderizar una matriz semafórica e indicadores de rendimiento, facilitando la detección temprana de alumnos en riesgo.
 
-### Características principales
+## ✨ Características Principales
 
-| Característica | Descripción |
-|----------------|-------------|
-| **Multi-cohorte** | Soporta múltiples cursos y cuatrimestres simultáneos |
-| **Visualización por colores** | Verde (a tiempo), Amarillo (tarde), Rojo (no entregó), Gris (pendiente) |
-| **Panel lateral** | Ver detalle completo de cada estudiante con un clic |
-| **Cálculo inteligente** | TPs integradores pesan más que entregas semanales |
-| **Exportación Excel** | Reportes con dos hojas: resumen y detalle |
-| **Formularios públicos** | Estudiantes entregan sin necesidad de login |
-
----
-
-## 🛠 Tecnologías
-
-- **NocoDB** (v0.250+) - Base de datos y formularios
-- **Flask** (v3.0.0) - Backend del dashboard
-- **SQLite** - Almacenamiento de datos
-- **Tailwind CSS** - Estilos del frontend
-- **Docker** & Docker Compose - Deployment
-- **OpenPyXL** - Exportación a Excel
+- 📊 **Matriz Semafórica Visual:** Estado de entregas codificado por colores: Verde (a tiempo/corregido), Amarillo (tarde/rehacer), Rojo (vencido/no entregado), Gris (pendiente).
+- 🎯 **Métricas Inteligentes:** Cálculo de índices de cumplimiento ponderando automáticamente trabajos semanales vs. TPs integradores.
+- 👥 **Soporte Multi-Cohorte:** Gestiona múltiples comisiones o cursos simultáneamente, filtrando en vivo.
+- 📤 **Exportación a Excel:** Descarga de reportes detallados con dos hojas (Resumen de Calificaciones y Detalle de Entregas) mediante `openpyxl`.
+- 🔗 **Integración Directa:** Panel lateral interactivo con accesos directos al email y perfil de GitHub del estudiante seleccionado.
 
 ---
 
 ## 🏗 Arquitectura
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  NocoDB (http://localhost:8080)                              │
-│  ├── Formulario público para entregas (estudiantes)         │
-│  └── Panel de administración (docentes/ayudantes)           │
-│       ├── Tabla Cohortes                                    │
-│       ├── Tabla Estudiantes                                 │
-│       ├── Tabla Actividades                                 │
-│       └── Tabla Entregas                                    │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-              ┌──────▼──────┐
-              │   SQLite    │
-              │   noco.db   │
-              └──────┬──────┘
-                     │
-┌────────────────────▼────────────────────────────────────────┐
-│  Dashboard Flask (http://localhost:5000)                     │
-│  ├── /            - Dashboard principal (matriz)            │
-│  ├── /resumen     - Vista de métricas (solo docentes)       │
-│  ├── /faq         - Preguntas frecuentes                    │
-│  └── /api/exportar-excel - Descarga de reportes             │
-└─────────────────────────────────────────────────────────────┘
-```
+La solución se divide en tres componentes dockerizados:
+
+1.  **NocoDB:** Actúa como *Backend-as-a-Service* (BaaS) y CMS para el docente. Se conecta a una base de datos SQLite.
+2.  **Dashboard Flask:** Aplicación web (Python/Gunicorn) que lee la base de datos SQLite generada por NocoDB para construir la interfaz y los reportes. Utiliza Tailwind CSS mediante CDN para el frontend.
+3.  **Traefik (Opcional pero recomendado):** En entornos de producción, se sugiere el uso de un proxy inverso como Traefik para gestionar certificados SSL y enrutamiento (ej. `seguimientotps.tudominio.com` y `nocodb.tudominio.com`).
 
 ---
 
-## 🚀 Instalación
+## ⚙️ Requisitos Previos
 
-### Requisitos previos
+Para desplegar este proyecto en tu servidor (VPS) o entorno local, necesitas:
 
-- Docker Engine 20.10+
-- Docker Compose 2.0+
-- Git (opcional, para clonar)
+- [Docker Engine](https://docs.docker.com/engine/install/) (v20.10+)
+- [Docker Compose](https://docs.docker.com/compose/install/) (v2.0+)
+- Git
 
-### Paso 1: Clonar o descargar
+---
+
+## 🚀 Instalación y Despliegue
+
+### Paso 1: Clonar el repositorio
 
 ```bash
-git clone https://github.com/tu-usuario/entregas-dashboard.git
-cd entregas-dashboard
+git clone https://github.com/mattbarreto/entregastp-dashboard.git
+cd entregastp-dashboard
 ```
 
-O descarga el ZIP y descomprime.
+### Paso 2: Variables de entorno
 
-### Paso 2: Configurar variables de entorno
+Copia el archivo de ejemplo para establecer las variables de entorno.
 
 ```bash
 cp .env.example .env
 ```
 
-Edita `.env` con tus valores:
+Edita el archivo `.env` según tus necesidades (por defecto, la configuración funciona *out-of-the-box* para Docker).
+
+### Paso 3: Levantar los servicios
+
+Inicia la infraestructura utilizando Docker Compose:
 
 ```bash
-# Opcional: filtrar solo cohortes activas
-COHORTE_FILTRAR_ACTIVAS=true
-
-# Modo Flask (production para deployment)
-FLASK_ENV=production
+docker compose up -d
 ```
 
-### Paso 3: Levantar servicios
-
-```bash
-docker-compose up -d
-```
-
-Espera 30 segundos a que NocoDB inicialice.
-
-### Paso 4: Configurar NocoDB
-
-1. Accede a `http://localhost:8080`
-2. Crea tu cuenta de administrador
-3. Crea un proyecto llamado "Seguimiento Entregas"
-4. Crea las tablas según el [schema de base de datos](#schema-de-base-de-datos)
-
-### Paso 5: Verificar
-
-- Dashboard: `http://localhost:5000`
-- NocoDB Admin: `http://localhost:8080`
+Los servicios estarán disponibles en:
+- **NocoDB (Administración):** `http://localhost:8080` (Crea tu cuenta admin en el primer inicio).
+- **Dashboard Flask:** `http://localhost:5000` (Estará vacío hasta configurar NocoDB).
 
 ---
 
-## ⚙️ Configuración
+## 🛠️ Configuración de NocoDB (Importante)
 
-### Schema de Base de Datos
+Para que el Dashboard de Flask funcione correctamente, NocoDB debe tener un esquema de tablas específico. **No automatices este paso por API**, créalas manualmente desde la interfaz visual de NocoDB (`http://localhost:8080`) para asegurar la correcta generación de metadatos internos.
 
-#### Tabla: Cohortes
+### 1. Creación de Tablas
+Crea un "Nuevo Proyecto" y añade **4 tablas vacías** con los siguientes nombres exactos:
+1. `Cohortes`
+2. `Actividades`
+3. `Estudiantes`
+4. `Entregas`
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| Nombre | Single Line Text | Ej: "2026-Q1-Redes" |
-| Curso | Single Select | "Tecnicatura Redes", "Tecnicatura Desarrollo" |
-| Cuatrimestre | Single Select | "Q1", "Q2" |
-| Año | Number | Año de la cohorte |
-| Fecha Inicio | Date | Inicio de clases |
-| Fecha Fin | Date | Fin de clases |
-| Activa | Checkbox | Visible en dashboard |
+### 2. Configuración de Columnas y Relaciones
 
-#### Tabla: Actividades
+Configura cada tabla con las columnas detalladas a continuación. **Nota:** Al crear relaciones (`LinkToAnotherRecord`), selecciona siempre el tipo **"Belongs To" / "Has Many"**.
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| Nombre | Single Line Text | "Semana 1", "TP Integrador 1" |
-| Orden | Number | Orden de aparición (1, 2, 3...) |
-| Tipo | Single Select | "Semanal" o "Integrador" |
-| Peso | Number | 1 para semanales, 10 para integradores |
-| Fecha Límite | DateTime | Deadline de entrega |
-| URL Guía | URL | Link al Colab/documento |
-| Cohorte | Link | Relación con tabla Cohortes |
+#### Tabla: `Cohortes`
+| Nombre de Columna | Tipo de NocoDB | Descripción |
+| :--- | :--- | :--- |
+| **Nombre** | `SingleLineText` | (Display Value) Ej: "pln-1c-2026" |
+| **Activa** | `Checkbox` | Marcar si la cohorte está en curso |
 
-#### Tabla: Estudiantes
+#### Tabla: `Actividades`
+| Nombre de Columna | Tipo de NocoDB | Descripción |
+| :--- | :--- | :--- |
+| **Nombre** | `SingleLineText` | (Display Value) Ej: "Semana 1", "TP1" |
+| **Orden** | `Number` | Orden cronológico (1, 2, 3...) |
+| **Fecha Límite** | `Date` o `DateTime` | Deadline de la entrega |
+| **Tipo** | `SingleSelect` | Opciones: `Semanal`, `Integrador` |
+| **Peso** | `Number` | Multiplicador (Ej: `1` semanal, `2` integrador) |
+| **URL Guía** | `URL` | Enlace a consigna o material |
+| **Cohorte** | `LinkToAnotherRecord` | Apunta a `Cohortes` (**Belongs To**) |
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| Nombre | Single Line Text | Nombre del estudiante |
-| Apellido | Single Line Text | Apellido del estudiante |
-| Email | Email | Correo institucional |
-| GitHub | URL | Peril de GitHub |
-| Cohorte | Link | Relación con tabla Cohortes |
+#### Tabla: `Estudiantes`
+| Nombre de Columna | Tipo de NocoDB | Descripción |
+| :--- | :--- | :--- |
+| **Apellido** | `SingleLineText` | (Display Value) Apellido principal |
+| **Nombre** | `SingleLineText` | Nombre de pila |
+| **Email** | `Email` | Correo de contacto |
+| **GitHub** | `URL` o `SingleLineText` | URL del perfil |
+| **Cohorte** | `LinkToAnotherRecord` | Apunta a `Cohortes` (**Belongs To**) |
 
-#### Tabla: Entregas
+#### Tabla: `Entregas`
+⚠️ *Importante: En NocoDB, el "Display Value" (1ra columna) no puede ser un SingleSelect.*
+| Nombre de Columna | Tipo de NocoDB | Descripción |
+| :--- | :--- | :--- |
+| **ID Entrega** | `SingleLineText` | (Display Value) Déjalo vacío, solo cumple el requisito técnico |
+| **Estado** | `SingleSelect` | Opciones: `Entregado`, `Entregado tarde`, `Corregido`, `Rehacer` |
+| **URL Entrega** | `URL` | Link al Repositorio/Documento del alumno |
+| **Estudiante** | `LinkToAnotherRecord` | Apunta a `Estudiantes` (**Belongs To**) |
+| **Actividad** | `LinkToAnotherRecord` | Apunta a `Actividades` (**Belongs To**) |
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| Estudiante | Link | Relación con tabla Estudiantes |
-| Actividad | Link | Relación con tabla Actividades |
-| URL Entrega | URL | Link a la entrega (GitHub, etc.) |
-| Archivo | Attachment | Archivo adjunto (opcional) |
-| Estado | Single Select | "Entregado", "Corregido", "Rehacer", "No entregado" |
-| Observaciones | Long Text | Feedback del docente |
+Una vez creadas las tablas, añade un registro a `Cohortes` y el Dashboard Flask (`http://localhost:5000`) detectará el esquema automáticamente.
 
 ---
 
-## 📚 Guía para Ayudantes
+## 📚 Guía Rápida de Uso
 
-### Crear una cohorte
+1. **Alta de Cursada:** Comienza creando una `Cohorte` y márcala como "Activa".
+2. **Carga de Alumnos:** Importa tu lista de alumnos a la tabla `Estudiantes` (Puedes usar la función "Importar CSV" de NocoDB). Asígnales la cohorte correspondiente.
+3. **Planificación:** Carga las tareas en la tabla `Actividades`, asignándoles su fecha límite y cohorte.
+4. **Recepción:** Crea una "Form View" (Vista de Formulario) en la tabla `Entregas` y comparte esa URL pública con tus alumnos.
+5. **Corrección y Seguimiento:** Revisa los envíos desde NocoDB cambiando su `Estado`. Abre el **Dashboard Flask** para tener una visión panóptica del grupo y acceder a las métricas de rendimiento.
 
-1. En NocoDB, ve a **Tabla Cohortes**
-2. Haz clic en **+ Nuevo**
-3. Completa los campos:
-   - **Nombre:** Usa formato "AÑO-Cuatrimestre-Curso" (ej: "2026-Q1-Redes")
-   - **Curso:** Selecciona de la lista
-   - **Cuatrimestre:** Q1 o Q2
-   - **Año:** 2026, 2027, etc.
-   - **Fechas:** Inicio y fin del período
-   - **Activa:** Marca esta casilla
+---
 
-### Cargar estudiantes desde CSV
+## 💻 Desarrollo Local
 
-1. Prepara un archivo CSV con este formato:
-   ```csv
-   Nombre,Apellido,Email,GitHub
-   Juan,Pérez,juan.perez@universidad.edu.ar,https://github.com/juanperez
-   María,García,maria.garcia@universidad.edu.ar,https://github.com/mariagarcia
+Para modificar el Dashboard Flask sin usar Docker:
+
+1. Asegúrate de tener Python 3.11+ instalado.
+2. Crea un entorno virtual e instala las dependencias:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # Linux/Mac
+   # venv\Scripts\activate   # Windows
+   pip install -r dashboard/requirements.txt
+   ```
+3. Genera una base de datos de prueba con datos simulados (Opcional):
+   ```bash
+   python seed_db.py
+   ```
+4. Ejecuta el servidor Flask de desarrollo:
+   ```bash
+   flask --app dashboard.app run --debug
    ```
 
-2. En NocoDB, tabla **Estudiantes**:
-   - Haz clic en los tres puntos (⋯) arriba a la derecha
-   - Selecciona **Importar CSV**
-   - Selecciona tu archivo
-   - Mapea las columnas correspondientes
-   - **Importante:** Asigna la cohorte a todos los estudiantes importados
-
-### Crear actividades/semanas
-
-1. En NocoDB, ve a **Tabla Actividades**
-2. Haz clic en **+ Nuevo**
-3. Completa:
-   - **Nombre:** "Semana 1", "Semana 2", "TP Integrador 1", etc.
-   - **Orden:** Número secuencial (1, 2, 3, 4...)
-   - **Tipo:**
-     - "Semanal" para prácticas semanales
-     - "Integrador" para TPs evaluativos
-   - **Peso:**
-     - 1 para semanales
-     - 10 para integradores
-   - **Fecha Límite:** Fecha y hora límite de entrega
-   - **URL Guía:** Link al notebook de Colab o documento
-
-### Usar el formulario de entregas
-
-1. En NocoDB, tabla **Entregas**
-2. Crea una **Form View** (vista de formulario)
-3. Configura campos visibles:
-   - Estudiante (dropdown)
-   - Actividad (dropdown)
-   - URL Entrega
-   - Archivo (opcional)
-4. Guarda y copia la URL pública
-5. Comparte la URL con los estudiantes
-
-### Corregir entregas en NocoDB
-
-1. Ve a la tabla **Entregas**
-2. Busca la entrega por:
-   - Filtro por estudiante, o
-   - Filtro por actividad
-3. Cambia el campo **Estado**:
-   - **Entregado** → Recibido, pendiente de corrección
-   - **Corregido** → Revisado y aprobado ✅
-   - **Rehacer** → Debe corregir y reenviar ⚠️
-   - **No entregado** → No se recibió ❌
-4. Agrega **Observaciones** con el feedback
-
-### Usar el dashboard de seguimiento
-
-1. Accede a `http://localhost:5000`
-2. Selecciona la cohorte desde el dropdown
-3. Visualiza:
-   - **Filas:** Estudiantes (ordenados alfabéticamente)
-   - **Columnas:** Actividades (en orden cronológico)
-   - **Colores:** Estado de cada entrega
-4. **Haz clic en un estudiante** para ver detalle:
-   - Email y GitHub
-   - Listado de todas sus entregas
-   - Estado de cada una
-
-### Usar la vista de resumen (solo docentes)
-
-1. Accede a `http://localhost:5000/resumen`
-2. Visualiza métricas por estudiante:
-   - % Entregas semanales
-   - % Entregas integradores
-   - Índice de participación
-   - Índice final ponderado
-   - Clasificación (Excelente/Bueno/Regular/Deficiente)
-3. Identifica rápidamente estudiantes en riesgo
-
-### Exportar a Excel
-
-1. En la vista **Resumen**, haz clic en **📊 Exportar Excel**
-2. Se descargará un archivo con dos hojas:
-   - **Resumen:** Una fila por estudiante con todas las métricas
-   - **Detalle:** Todas las entregas con su estado
-
 ---
 
-## ❓ FAQ
+## 🔧 Solución de Problemas (Troubleshooting)
 
-**¿Dónde encuentro más información?**
+### Error 500 al acceder al Dashboard (SQLite OperationalError)
+- **Causa:** El Dashboard no encuentra las tablas en la base de datos `noco.db`.
+- **Solución:** Asegúrate de haber completado la [Configuración de NocoDB](#%EF%B8%8F-configuración-de-nocodb-importante). El dashboard no se romperá si las tablas no existen (mostrará vacío), pero fallará si el esquema o los nombres difieren de los esperados.
 
-Visita la página de FAQ integrada: `http://localhost:5000/faq`
-
-**¿Cómo calcula el sistema el índice final?**
-
-```
-Índice Final = (TP Integrador 1 × 40%) + (TP Integrador 2 × 40%) + (Participación × 20%)
-
-Participación = (Entregas a tiempo × 1.0 + Entregas tarde × 0.5) / Total semanales × 100
-```
-
-**¿Puedo usar el sistema sin Docker?**
-
-Sí, pero requiere instalar NocoDB y Python manualmente. Ver sección [Desarrollo](#-desarrollo).
-
-**¿Cuántos estudiantes soporta?**
-
-Probado hasta 200 estudiantes por cohorte. Para más, considera migrar a PostgreSQL.
-
----
-
-## 🔧 Troubleshooting
-
-### Error: "database is locked"
-
-**Causa:** SQLite no permite escritura simultánea.  
-**Solución:**
-```bash
-docker restart nocodb
-docker restart entregas-dashboard
-```
-
-### El dashboard muestra "No hay datos"
-
-**Verifica:**
-1. Existe una cohorte con "Activa" marcado
-2. La cohorte tiene estudiantes
-3. La cohorte tiene actividades
-
-### Las columnas no se ven correctamente
-
-**Solución:** Reinicia el dashboard para releer el schema:
-```bash
-docker restart entregas-dashboard
-```
-
-### NocoDB no inicia
-
-**Verifica puertos:**
-```bash
-docker logs nocodb
-```
-Asegúrate de que el puerto 8080 no esté ocupado.
-
----
-
-## 💻 Desarrollo
-
-### Requisitos
-
-- Python 3.11+
-- pip
-- virtualenv (opcional)
-
-### Setup local
-
-```bash
-# Crear entorno virtual
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-venv\Scripts\activate     # Windows
-
-# Instalar dependencias
-pip install -r dashboard/requirements.txt
-
-# Generar base de prueba
-python seed_db.py
-
-# Ejecutar dashboard
-export NOCODB_DB_PATH=test_data/noco.db  # Linux/Mac
-set NOCODB_DB_PATH=test_data/noco.db     # Windows
-flask --app dashboard.app run --debug
-```
-
-### Estructura del proyecto
-
-```
-entregas-tracker/
-├── docker-compose.yml          # Orquestación de servicios
-├── README.md                   # Este archivo
-├── LICENSE                     # Licencia MIT
-├── .env.example                # Variables de entorno ejemplo
-├── .gitignore                  # Exclusiones de git
-├── backup.sh                   # Script de backup
-├── seed_db.py                  # Datos de prueba
-└── dashboard/
-    ├── Dockerfile              # Build del dashboard
-    ├── requirements.txt        # Dependencias Python
-    ├── app.py                  # Backend Flask
-    └── templates/
-        ├── index.html          # Dashboard principal
-        ├── resumen.html        # Vista de métricas
-        └── faq.html            # Preguntas frecuentes
-```
+### NocoDB bloquea la base de datos ("database is locked")
+- **Causa:** Concurrencia de escritura de SQLite.
+- **Solución:** Reinicia ambos contenedores:
+  ```bash
+  docker compose restart
+  ```
 
 ---
 
 ## 📄 Licencia
 
-MIT License - ver archivo [LICENSE](LICENSE) para detalles.
-
----
-
-## 👤 Autor
-
-**Matías Barreto**
-- Web: [www.matiasbarreto.com](https://www.matiasbarreto.com)
-- Versión: v1.0.0
-
----
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
 
 <div align="center">
-  <sub>Desarrollado con ❤️ para la educación pública</sub>
+  <sub>Desarrollado con ❤️ para la educación</sub>
 </div>

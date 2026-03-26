@@ -29,6 +29,7 @@ Sistema *self-hosted* integral para el seguimiento y gestión de entregas de est
 - [Configuración de NocoDB (Importante)](#%EF%B8%8F-configuración-de-nocodb-importante)
   - [1. Creación de Tablas](#1-creación-de-tablas)
   - [2. Configuración de Columnas y Relaciones](#2-configuración-de-columnas-y-relaciones)
+  - [3. Formulario Público para Estudiantes](#3-formulario-público-para-estudiantes)
 - [Guía Rápida de Uso](#-guía-rápida-de-uso)
 - [Desarrollo Local](#-desarrollo-local)
 - [Solución de Problemas (Troubleshooting)](#-solución-de-problemas-troubleshooting)
@@ -118,7 +119,7 @@ Crea un "Nuevo Proyecto" y añade **4 tablas vacías** con los siguientes nombre
 
 ### 2. Configuración de Columnas y Relaciones
 
-Configura cada tabla con las columnas detalladas a continuación. **Nota:** Al crear relaciones (`LinkToAnotherRecord`), selecciona siempre el tipo **"Belongs To" / "Has Many"**.
+Configura cada tabla con las columnas detalladas a continuación. **Nota:** Al crear relaciones (`LinkToAnotherRecord`), selecciona siempre el tipo **"Tiene muchos" (Has Many)** cuando apuntes desde una tabla hija a una tabla padre (ej. de Estudiantes a Cohortes).
 
 #### Tabla: `Cohortes`
 | Nombre de Columna | Tipo de NocoDB | Descripción |
@@ -135,7 +136,7 @@ Configura cada tabla con las columnas detalladas a continuación. **Nota:** Al c
 | **Tipo** | `SingleSelect` | Opciones: `Semanal`, `Integrador` |
 | **Peso** | `Number` | Multiplicador (Ej: `1` semanal, `2` integrador) |
 | **URL Guía** | `URL` | Enlace a consigna o material |
-| **Cohorte** | `LinkToAnotherRecord` | Apunta a `Cohortes` (**Belongs To**) |
+| **Cohorte** | `LinkToAnotherRecord` | Elige **"Tiene muchos"** apuntando a `Cohortes` |
 
 #### Tabla: `Estudiantes`
 | Nombre de Columna | Tipo de NocoDB | Descripción |
@@ -144,7 +145,7 @@ Configura cada tabla con las columnas detalladas a continuación. **Nota:** Al c
 | **Nombre** | `SingleLineText` | Nombre de pila |
 | **Email** | `Email` | Correo de contacto |
 | **GitHub** | `URL` o `SingleLineText` | URL del perfil |
-| **Cohorte** | `LinkToAnotherRecord` | Apunta a `Cohortes` (**Belongs To**) |
+| **Cohorte** | `LinkToAnotherRecord` | Elige **"Tiene muchos"** apuntando a `Cohortes` |
 
 #### Tabla: `Entregas`
 ⚠️ *Importante: En NocoDB, el "Display Value" (1ra columna) no puede ser un SingleSelect.*
@@ -153,10 +154,22 @@ Configura cada tabla con las columnas detalladas a continuación. **Nota:** Al c
 | **ID Entrega** | `SingleLineText` | (Display Value) Déjalo vacío, solo cumple el requisito técnico |
 | **Estado** | `SingleSelect` | Opciones: `Entregado`, `Entregado tarde`, `Corregido`, `Rehacer` |
 | **URL Entrega** | `URL` | Link al Repositorio/Documento del alumno |
-| **Estudiante** | `LinkToAnotherRecord` | Apunta a `Estudiantes` (**Belongs To**) |
-| **Actividad** | `LinkToAnotherRecord` | Apunta a `Actividades` (**Belongs To**) |
+| **Estudiante** | `LinkToAnotherRecord` | Elige **"Tiene muchos"** apuntando a `Estudiantes` |
+| **Actividad** | `LinkToAnotherRecord` | Elige **"Tiene muchos"** apuntando a `Actividades` |
 
-Una vez creadas las tablas, añade un registro a `Cohortes` y el Dashboard Flask (`http://localhost:5000`) detectará el esquema automáticamente.
+### 3. Formulario Público para Estudiantes
+
+Para que los estudiantes puedan entregar sus trabajos, debes crear una vista de tipo Formulario en NocoDB:
+
+1.  Ve a la tabla **`Entregas`**.
+2.  Haz clic en el botón **`+`** al lado de las vistas (donde dice "Grid View").
+3.  Selecciona **`Form`** y ponle un nombre (ej. "Entrega de TPs").
+4.  Configura el formulario:
+    *   **Oculta** el campo `ID Entrega` (clic en el ojo).
+    *   Deja visibles `Estudiante`, `Actividad` y `URL Entrega`.
+    *   Puedes ocultar `Estado` y ponerle un valor predeterminado de "Entregado".
+5.  Haz clic en **`Share`** (arriba a la derecha) y activa **`Shared View`**.
+6.  Copia la URL generada. **Este es el enlace que debes enviar a tus estudiantes.**
 
 ---
 
@@ -165,7 +178,7 @@ Una vez creadas las tablas, añade un registro a `Cohortes` y el Dashboard Flask
 1. **Alta de Cursada:** Comienza creando una `Cohorte` y márcala como "Activa".
 2. **Carga de Alumnos:** Importa tu lista de alumnos a la tabla `Estudiantes` (Puedes usar la función "Importar CSV" de NocoDB). Asígnales la cohorte correspondiente.
 3. **Planificación:** Carga las tareas en la tabla `Actividades`, asignándoles su fecha límite y cohorte.
-4. **Recepción:** Crea una "Form View" (Vista de Formulario) en la tabla `Entregas` y comparte esa URL pública con tus alumnos.
+4. **Recepción:** Crea una "Form View" (Paso 3 arriba) y comparte esa URL pública con tus alumnos.
 5. **Corrección y Seguimiento:** Revisa los envíos desde NocoDB cambiando su `Estado`. Abre el **Dashboard Flask** para tener una visión panóptica del grupo y acceder a las métricas de rendimiento.
 
 ---

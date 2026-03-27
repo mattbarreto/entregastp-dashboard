@@ -104,7 +104,7 @@
     </div>
     {% endif %}
 
-    {% if students and activities %}
+    {% if students %}
     <div class="bg-white rounded-lg shadow-sm overflow-auto max-h-[80vh]">
         <table class="matrix-table w-full border-separate border-spacing-0 text-xs" style="min-width: 100%;">
             <thead>
@@ -112,12 +112,18 @@
                     <th class="corner bg-slate-200 border-b-2 border-gray-300 px-2 py-3 font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap text-left">
                         Estudiante
                     </th>
-                    {% for activity in activities %}
-                    <th class="activity-header-cell bg-slate-100 border-b-2 border-gray-300 px-1.5 py-3 font-semibold text-gray-500 uppercase tracking-wide"
-                        title="{{ activity.nombre }}">
-                        {{ activity.nombre }}
-                    </th>
-                    {% endfor %}
+                    {% if activities %}
+                        {% for activity in activities %}
+                        <th class="activity-header-cell bg-slate-100 border-b-2 border-gray-300 px-1.5 py-3 font-semibold text-gray-500 uppercase tracking-wide"
+                            title="{{ activity.nombre }}">
+                            {{ activity.nombre }}
+                        </th>
+                        {% endfor %}
+                    {% else %}
+                        <th class="bg-slate-50 border-b-2 border-gray-300 px-4 py-3 font-medium text-slate-400 italic text-center">
+                            Espacio de trabajo listo (Cargá actividades en NocoDB)
+                        </th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -127,23 +133,42 @@
                         onclick="openStudentPanel({{ student.id }})">
                         <div class="font-semibold text-gray-800 text-xs">{{ student.apellido }}, {{ student.nombre }}</div>
                     </td>
-                    {% for activity in activities %}
-                    {% set cell = cells.get((student.id, activity.id)) %}
-                    {% if cell %}
-                    <td class="status-cell tooltip border-b border-r border-gray-100 text-center cursor-pointer transition-transform w-10 h-10 min-w-[40px] min-h-[40px] status-{{ 'verde' if cell.color == '#22c55e' else 'amarillo' if cell.color == '#eab308' else 'rojo' if cell.color == '#ef4444' else 'gris' }}"
-                        data-tooltip="{{ cell.tooltip }}"
-                        {% if cell.url %}onclick="window.open('{{ cell.url }}', '_blank')"{% endif %}>
-                        {{ cell.label }}
-                    </td>
+                    {% if activities %}
+                        {% for activity in activities %}
+                        {% set cell = cells.get((student.id, activity.id)) %}
+                        {% if cell %}
+                        <td class="status-cell tooltip border-b border-r border-gray-100 text-center cursor-pointer transition-transform w-10 h-10 min-w-[40px] min-h-[40px] status-{{ 'verde' if cell.color == '#22c55e' else 'amarillo' if cell.color == '#eab308' else 'rojo' if cell.color == '#ef4444' else 'gris' }}"
+                            data-tooltip="{{ cell.tooltip }}"
+                            {% if cell.url %}onclick="window.open('{{ cell.url }}', '_blank')"{% endif %}>
+                            {{ cell.label }}
+                        </td>
+                        {% else %}
+                        <td class="status-cell border-b border-r border-gray-100 text-center w-10 h-10 min-w-[40px] min-h-[40px] status-gris">−</td>
+                        {% endif %}
+                        {% endfor %}
                     {% else %}
-                    <td class="status-cell border-b border-r border-gray-100 text-center w-10 h-10 min-w-[40px] min-h-[40px] status-gris">−</td>
+                        <td class="bg-slate-50/50 border-b border-gray-100 text-center py-2">
+                            <span class="text-[10px] text-slate-300 uppercase tracking-widest font-mono">Ready _</span>
+                        </td>
                     {% endif %}
-                    {% endfor %}
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    {% elif activities %}
+        <div class="bg-white p-12 rounded-xl shadow-sm border border-slate-100 text-center">
+            <div class="text-4xl mb-4">👥</div>
+            <h3 class="text-lg font-semibold text-slate-800">No hay estudiantes cargados</h3>
+            <p class="text-slate-500 text-sm mt-1">Cargá alumnos en la tabla de NocoDB y vinculalos a la cohorte para ver la matriz.</p>
+        </div>
+    {% else %}
+        <div class="bg-white p-12 rounded-xl shadow-sm border border-slate-100 text-center">
+            <div class="text-4xl mb-4">🚀</div>
+            <h3 class="text-lg font-semibold text-slate-800">¡Empezamos!</h3>
+            <p class="text-slate-500 text-sm mt-1">Seleccioná una cohorte o cargá datos en NocoDB para comenzar el seguimiento.</p>
+        </div>
+    {% endif %}
 
     <div class="flex gap-5 justify-center mt-4 p-3 bg-white rounded-lg shadow-sm flex-wrap">
         <div class="flex items-center gap-2 text-sm">

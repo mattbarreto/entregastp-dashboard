@@ -17,4 +17,3 @@ dist/
 .installed.cfg
 *.egg
 CREDENCIALES_PRIVADAS.md
-docker-compose.final.yml

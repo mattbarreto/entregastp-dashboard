@@ -108,24 +108,10 @@ Los servicios estarán disponibles en:
 
 ## 🛠️ Configuración de NocoDB (Importante)
 
-Para que el Dashboard de Flask funcione correctamente, NocoDB debe tener un esquema de tablas específico. Tienes dos opciones para lograr esto: automatizado (Recomendado) o manual.
-
-### Opción A: Automatizado vía Script Python (Recomendado)
-El proyecto incluye un script de automatización (`create_noco_tables.py`) que usa la API de NocoDB para construir el esquema estructural exacto en 5 segundos.
-
-1. Asegúrate de tener tu `.env` configurado con tu URL pública (`NOCODB_URL=https://...`).
-2. Ejecuta el archivo en tu consola:
-   ```bash
-   python create_noco_tables.py
-   ```
-3. Al ejecutarlo, te solicitará tu Email y Contraseña del administrador de NocoDB (esta información no se guarda, solo se usa en tiempo de ejecución para obtener un JWT oficial y conectarse a la API).
-4. **⚠️ Revisión final:** Entra a la interfaz de NocoDB y verifica que en las 4 columnas de tipo "Relación" (`Link a Cohortes`, `Link a Estudiantes`, etc.) esté **desmarcada** la opción "Permitir enlazar a múltiples registros".
-
-### Opción B: Creación Manual
-Si prefieres no usar el script, créalas manualmente desde la interfaz visual de NocoDB:
+Para que el Dashboard de Flask funcione correctamente, NocoDB debe tener un esquema de tablas específico. Sigue estas instrucciones para crearlo manualmente desde la interfaz visual de NocoDB:
 
 ### 1. Creación de Tablas
-Crea un "Nuevo Proyecto" y añade **4 tablas vacías** con los siguientes nombres exactos:
+Crea un "Nuevo Proyecto" (Base) y añade **4 tablas vacías** con los siguientes nombres exactos:
 1. `Cohortes`
 2. `Actividades`
 3. `Estudiantes`

@@ -48,7 +48,7 @@ A través de **NocoDB**, se generan formularios públicos para que los estudiant
 - 📊 **Matriz Semafórica Visual:** Estado de entregas codificado por colores: Verde (a tiempo/corregido), Amarillo (tarde/rehacer), Rojo (vencido/no entregado), Gris (pendiente).
 - 🎯 **Métricas Inteligentes:** Cálculo de índices de cumplimiento ponderando automáticamente trabajos semanales vs. TPs integradores.
 - 👥 **Soporte Multi-Cohorte:** Gestiona múltiples comisiones o cursos simultáneamente, filtrando en vivo.
-- 📤 **Exportación a Excel:** Descarga de reportes detallados con dos hojas (Resumen de Calificaciones y Detalle de Entregas) mediante `openpyxl`.
+- 📤 **Exportación a Excel:** Descarga de reportes detallados por cohorte con métricas de cada estudiante mediante `openpyxl`.
 - 🔗 **Integración Directa:** Panel lateral interactivo con accesos directos al email y perfil de GitHub del estudiante seleccionado.
 
 ---

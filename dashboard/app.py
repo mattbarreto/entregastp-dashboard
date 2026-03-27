@@ -8,7 +8,8 @@ import sqlite3
 import logging
 from datetime import datetime
 from typing import Optional, Dict, List, Any, Tuple
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file
+import io
 
 # Configuración de logs
 logging.basicConfig(level=logging.INFO)
@@ -450,6 +451,7 @@ def get_matrix_data(conn: sqlite3.Connection, schema: Dict, cohorte_id: int) -> 
     col_act_nombre = get_column_name(schema, 'Actividades', 'Nombre') or 'Nombre'
     col_act_orden = get_column_name(schema, 'Actividades', 'Orden') or 'Orden'
     col_act_fecha_limite = get_column_name(schema, 'Actividades', 'Fecha Límite') or 'Fecha'
+    col_act_peso = get_column_name(schema, 'Actividades', 'Peso') or 'Peso'
     col_act_cohorte = get_column_name(schema, 'Actividades', 'Cohorte') or 'nc_fk_cohorte_id'
 
     col_ent_estado = get_column_name(schema, 'Entregas', 'Estado') or 'Estado'
@@ -463,7 +465,7 @@ def get_matrix_data(conn: sqlite3.Connection, schema: Dict, cohorte_id: int) -> 
         students = [dict(row) for row in cursor.fetchall()]
 
         # 2. Actividades
-        cursor.execute(f"SELECT {col_act_id} as id, {col_act_nombre} as nombre, {col_act_fecha_limite} as fecha_limite FROM {table_act} WHERE {col_act_cohorte} = ? ORDER BY {col_act_orden}", (cohorte_id,))
+        cursor.execute(f"SELECT {col_act_id} as id, {col_act_nombre} as nombre, {col_act_fecha_limite} as fecha_limite, {col_act_peso} as peso FROM {table_act} WHERE {col_act_cohorte} = ? ORDER BY {col_act_orden}", (cohorte_id,))
         activities = [dict(row) for row in cursor.fetchall()]
 
         # 3. Entregas
@@ -555,6 +557,228 @@ def index():
                                students=students, activities=activities, cells=processed_cells,
                                students_data=students_data, entregas_por_estudiante=entregas_por_estudiante,
                                schema_warnings=_schema_warnings, schema_fixed=_schema_fixed)
+    finally:
+        conn.close()
+
+
+@app.route('/resumen')
+def resumen():
+    conn = get_db()
+    try:
+        schema = discover_schema(conn)
+        cohortes = get_cohortes(conn, schema)
+        cohorte_id = request.args.get('cohorte', type=int)
+        if not cohorte_id and cohortes: cohorte_id = cohortes[0]['id']
+        selected_cohorte = next((c for c in cohortes if c['id'] == cohorte_id), None)
+        
+        resumen_data = []
+        if cohorte_id:
+            students, activities, cells = get_matrix_data(conn, schema, cohorte_id)
+            now = datetime.now()
+            
+            # Identify total integradores and semanales for base calculation
+            total_semanales = max(sum(1 for a in activities if a.get('peso', 1) == 1), 1)
+            total_integradores = max(sum(1 for a in activities if a.get('peso', 1) > 1), 1)
+            
+            for s in students:
+                semanales_a_tiempo = 0
+                semanales_tarde = 0
+                integradores_a_tiempo = 0
+                integradores_tarde = 0
+                tp_integradores_scores = []
+                
+                for a in activities:
+                    is_integrador = a.get('peso', 1) > 1
+                    cell = compute_cell(cells.get((s['id'], a['id'])), a.get('fecha_limite'), now)
+                    
+                    if cell['status'] in ('Entregado', 'Corregido'):
+                        if is_integrador: 
+                            integradores_a_tiempo += 1
+                            tp_integradores_scores.append(100)
+                        else: semanales_a_tiempo += 1
+                    elif cell['status'] in ('Tarde', 'Rehacer'):
+                        if is_integrador: 
+                            integradores_tarde += 1
+                            tp_integradores_scores.append(50)
+                        else: semanales_tarde += 1
+                    else:
+                        if is_integrador:
+                            tp_integradores_scores.append(0)
+                        
+                participacion_pts = semanales_a_tiempo * 1.0 + semanales_tarde * 0.5
+                indice_participacion = min(100, round((participacion_pts / total_semanales) * 100))
+                
+                tp1 = tp_integradores_scores[0] if len(tp_integradores_scores) > 0 else 0
+                tp2 = tp_integradores_scores[1] if len(tp_integradores_scores) > 1 else 0
+                
+                indice_final = round((tp1 * 0.4) + (tp2 * 0.4) + (indice_participacion * 0.2))
+                
+                if indice_final >= 90: clasificacion = "Excelente"
+                elif indice_final >= 70: clasificacion = "Bueno"
+                elif indice_final >= 50: clasificacion = "Regular"
+                else: clasificacion = "Deficiente"
+                
+                resumen_data.append({
+                    'id': s['id'],
+                    'nombre': s['nombre'],
+                    'apellido': s['apellido'],
+                    'email': s['email'],
+                    'semanales_a_tiempo': semanales_a_tiempo,
+                    'semanales_tarde': semanales_tarde,
+                    'total_semanales': total_semanales,
+                    'porcentaje_semanales': round((semanales_a_tiempo / total_semanales) * 100),
+                    'integradores_a_tiempo': integradores_a_tiempo,
+                    'total_integradores': total_integradores,
+                    'porcentaje_integradores': round((integradores_a_tiempo / total_integradores) * 100),
+                    'indice_participacion': indice_participacion,
+                    'indice_final': indice_final,
+                    'clasificacion': clasificacion
+                })
+        return render_template('resumen.html', cohortes=cohortes, selected_cohorte=selected_cohorte, resumen=resumen_data)
+    finally:
+        conn.close()
+
+
+@app.route('/api/estudiante/<int:estudiante_id>')
+def api_estudiante(estudiante_id):
+    conn = get_db()
+    try:
+        schema = discover_schema(conn)
+        # Búsqueda simple en la tabla Estudiantes (sin checks rigurosos completos para este API corto)
+        table_est = get_table_name(schema, 'Estudiantes')
+        col_id = get_column_name(schema, 'Estudiantes', 'Id') or 'id'
+        
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT * FROM {table_est} WHERE {col_id} = ?", (estudiante_id,))
+        estudiante = cursor.fetchone()
+        
+        if not estudiante:
+            return jsonify({"error": "Estudiante no encontrado"}), 404
+            
+        # Entregas del estudiante
+        table_ent = get_table_name(schema, 'Entregas')
+        col_ent_est = get_column_name(schema, 'Entregas', 'Estudiante') or 'nc_fk_estudiante_id'
+        cursor.execute(f"SELECT * FROM {table_ent} WHERE {col_ent_est} = ?", (estudiante_id,))
+        entregas = [dict(row) for row in cursor.fetchall()]
+        
+        return jsonify({
+            "estudiante": dict(estudiante),
+            "entregas": entregas
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+
+
+@app.route('/api/exportar-excel')
+def exportar_excel():
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    
+    conn = get_db()
+    try:
+        schema = discover_schema(conn)
+        cohortes = get_cohortes(conn, schema)
+        cohorte_id = request.args.get('cohorte', type=int)
+        if not cohorte_id and cohortes: cohorte_id = cohortes[0]['id']
+        selected_cohorte = next((c for c in cohortes if c['id'] == cohorte_id), None)
+        
+        wb = Workbook()
+        ws = wb.active
+        ws.title = f"Resumen {selected_cohorte['nombre'] if selected_cohorte else 'General'}"
+        
+        headers = ['ID', 'Apellido', 'Nombre', 'Email', 'Semanales A Tiempo', 'Total Semanales', '% Semanales', 'TP Integradores A Tiempo', 'Total Integradores', '% Integradores', 'Índice Part (%)', 'Índice Final (%)', 'Clasificación']
+        ws.append(headers)
+        
+        # Styles for header
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="1F2937", end_color="1F2937", fill_type="solid")
+        for col, _ in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal="center")
+            
+        if cohorte_id:
+            students, activities, cells = get_matrix_data(conn, schema, cohorte_id)
+            now = datetime.now()
+            
+            total_semanales = max(sum(1 for a in activities if a.get('peso', 1) == 1), 1)
+            total_integradores = max(sum(1 for a in activities if a.get('peso', 1) > 1), 1)
+            
+            for s in students:
+                semanales_a_tiempo = 0
+                semanales_tarde = 0
+                integradores_a_tiempo = 0
+                integradores_tarde = 0
+                tp_integradores_scores = []
+                
+                for a in activities:
+                    is_integrador = a.get('peso', 1) > 1
+                    cell = compute_cell(cells.get((s['id'], a['id'])), a.get('fecha_limite'), now)
+                    
+                    if cell['status'] in ('Entregado', 'Corregido'):
+                        if is_integrador: 
+                            integradores_a_tiempo += 1
+                            tp_integradores_scores.append(100)
+                        else: semanales_a_tiempo += 1
+                    elif cell['status'] in ('Tarde', 'Rehacer'):
+                        if is_integrador: 
+                            integradores_tarde += 1
+                            tp_integradores_scores.append(50)
+                        else: semanales_tarde += 1
+                    else:
+                        if is_integrador: tp_integradores_scores.append(0)
+                        
+                participacion_pts = semanales_a_tiempo * 1.0 + semanales_tarde * 0.5
+                indice_participacion = min(100, round((participacion_pts / total_semanales) * 100))
+                
+                tp1 = tp_integradores_scores[0] if len(tp_integradores_scores) > 0 else 0
+                tp2 = tp_integradores_scores[1] if len(tp_integradores_scores) > 1 else 0
+                
+                indice_final = round((tp1 * 0.4) + (tp2 * 0.4) + (indice_participacion * 0.2))
+                
+                if indice_final >= 90: clasificacion = "Excelente"
+                elif indice_final >= 70: clasificacion = "Bueno"
+                elif indice_final >= 50: clasificacion = "Regular"
+                else: clasificacion = "Deficiente"
+                
+                row = [
+                    s['id'], s['apellido'], s['nombre'], s['email'],
+                    semanales_a_tiempo, total_semanales, round((semanales_a_tiempo/total_semanales)*100),
+                    integradores_a_tiempo, total_integradores, round((integradores_a_tiempo/total_integradores)*100),
+                    indice_participacion, indice_final, clasificacion
+                ]
+                ws.append(row)
+        
+        # Auto-adjust column widths
+        for col in ws.columns:
+            max_length = 0
+            column = col[0].column_letter 
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = (max_length + 2)
+            ws.column_dimensions[column].width = adjusted_width
+
+        out = io.BytesIO()
+        wb.save(out)
+        out.seek(0)
+        
+        filename = f"resumen_cohorte_{selected_cohorte['nombre']}.xlsx" if selected_cohorte else "resumen.xlsx"
+        return send_file(
+            out,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        logger.error(f"Error generando excel: {e}")
+        return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
 

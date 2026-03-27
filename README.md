@@ -117,45 +117,95 @@ Crea un "Nuevo Proyecto" (Base) y añade **4 tablas vacías** con los siguientes
 3. `Estudiantes`
 4. `Entregas`
 
-### 2. Configuración de Columnas y Relaciones
+### 2. Configuración de Columnas y Relaciones Mágicas
 
-Configura cada tabla con las columnas detalladas a continuación. **Nota:** Al crear relaciones (`LinkToAnotherRecord`), selecciona siempre el tipo **"Tiene muchos" (Has Many)** cuando apuntes desde una tabla hija a una tabla padre (ej. de Estudiantes a Cohortes).
+El dashboard utiliza un motor de "Smart Schema Discovery" que soporta faltas de ortografía, tildes (ej. Límite/Limite) y cambios entre singulares y plurales. 
 
-#### Tabla: `Cohortes`
-| Nombre de Columna | Tipo de NocoDB | Descripción |
-| :--- | :--- | :--- |
-| **Nombre** | `SingleLineText` | (Display Value) Ej: "pln-1c-2026" |
-| **Activa** | `Checkbox` | Marcar si la cohorte está en curso |
+⚠️ **REGLA DE ORO PUNTUAL:** Las relaciones en NocoDB **NO** deben ser creadas como "Muchos a Muchos". Para que el Dashboard funcione, usaremos un "Hack" en NocoDB configurándolas como **Uno a Uno**, lo que garantiza que NocoDB incruste la clave foránea en la tabla hija en lugar de crear tablas virtuales rotas.
 
-#### Tabla: `Actividades`
-| Nombre de Columna | Tipo de NocoDB | Descripción |
-| :--- | :--- | :--- |
-| **Nombre** | `SingleLineText` | (Display Value) Ej: "Semana 1", "TP1" |
-| **Orden** | `Number` | Orden cronológico (1, 2, 3...) |
-| **Fecha Límite** | `Date` o `DateTime` | Deadline de la entrega |
-| **Tipo** | `SingleSelect` | Opciones: `Semanal`, `Integrador` |
-| **Peso** | `Number` | Multiplicador (Ej: `1` semanal, `2` integrador) |
-| **URL Guía** | `URL` | Enlace a consigna o material |
-| **Cohorte** | `LinkToAnotherRecord` | Elige **"Tiene muchos"** apuntando a `Cohortes` |
+#### Tablas Base
+Crea las siguientes columnas normales en cada tabla antes de hacer las relaciones:
 
-#### Tabla: `Estudiantes`
-| Nombre de Columna | Tipo de NocoDB | Descripción |
-| :--- | :--- | :--- |
-| **Apellido** | `SingleLineText` | (Display Value) Apellido principal |
-| **Nombre** | `SingleLineText` | Nombre de pila |
-| **Email** | `Email` | Correo de contacto |
-| **GitHub** | `URL` o `SingleLineText` | URL del perfil |
-| **Cohorte** | `LinkToAnotherRecord` | Elige **"Tiene muchos"** apuntando a `Cohortes` |
+**Tabla: `Cohortes`**
+- **Nombre:** `SingleLineText` (Ej: "pln-1c-2026")
+- **Activa:** `Checkbox`
 
-#### Tabla: `Entregas`
-⚠️ *Importante: En NocoDB, el "Display Value" (1ra columna) no puede ser un SingleSelect.*
-| Nombre de Columna | Tipo de NocoDB | Descripción |
-| :--- | :--- | :--- |
-| **ID Entrega** | `SingleLineText` | (Display Value) Déjalo vacío, solo cumple el requisito técnico |
-| **Estado** | `SingleSelect` | Opciones: `Entregado`, `Entregado tarde`, `Corregido`, `Rehacer` |
-| **URL Entrega** | `URL` | Link al Repositorio/Documento del alumno |
-| **Estudiante** | `LinkToAnotherRecord` | Elige **"Tiene muchos"** apuntando a `Estudiantes` |
-| **Actividad** | `LinkToAnotherRecord` | Elige **"Tiene muchos"** apuntando a `Actividades` |
+**Tabla: `Actividades`**
+- **Nombre:** `SingleLineText` (Ej: "Semana 1", "TP1")
+- **Orden:** `Number` (Orden cronológico)
+- **Fecha Límite:** `Date` o `DateTime`
+- **Tipo:** `SingleSelect` (Opciones: `Semanal`, `Integrador`)
+- **Peso:** `Number` (Multiplicador)
+- **URL Guía:** `URL`
+
+**Tabla: `Estudiantes`**
+- **Apellido:** `SingleLineText`
+- **Nombre:** `SingleLineText`
+- **Email:** `Email`
+- **GitHub:** `URL`
+
+**Tabla: `Entregas`**
+- **ID Entrega:** `SingleLineText` *(Déjalo vacío, solo cumple requisito del Display Value)*
+- **Estado:** `SingleSelect` (Opciones: `Entregado`, `Entregado tarde`, `Corregido`, `Rehacer`)
+- **URL Entrega:** `URL`
+
+---
+
+#### PASO A PASO DEFINITIVO DE RELACIONES
+
+Sigue **ESTRICTAMENTE** esta guía para vincular las tablas. Si existen campos con un ícono de eslabón previamente, **bórralos** antes de comenzar.
+
+**A. Estudiantes → Cohortes**
+1. Ir a la tabla **Estudiantes**
+2. Clic en `+ Add column`
+3. Tipo: `LinkToAnotherRecord`
+4. Configurar:
+   - Tabla: `Cohortes`
+   - Relación: **Uno a uno**
+   - Nombre: `Cohorte`
+5. Guardar
+
+**B. Actividades → Cohortes**
+1. Ir a la tabla **Actividades**
+2. Clic en `+ Add column`
+3. Tipo: `LinkToAnotherRecord`
+4. Configurar:
+   - Tabla: `Cohortes`
+   - Relación: **Uno a uno**
+   - Nombre: `Cohorte`
+5. Guardar
+
+**C. Entregas → Estudiantes**
+1. Ir a la tabla **Entregas**
+2. Clic en `+ Add column`
+3. Tipo: `LinkToAnotherRecord`
+4. Configurar:
+   - Tabla: `Estudiantes`
+   - Relación: **Uno a uno**
+   - Nombre: `Estudiante`
+5. Guardar
+
+**D. Entregas → Actividades**
+1. Ir a la tabla **Entregas**
+2. Clic en `+ Add column`
+3. Tipo: `LinkToAnotherRecord`
+4. Configurar:
+   - Tabla: `Actividades`
+   - Relación: **Uno a uno**
+   - Nombre: `Actividad`
+5. Guardar
+
+#### VERIFICACIÓN (MUY IMPORTANTE)
+**Test rápido**
+En Entregas: 
+- El campo `Estudiante` solo permite elegir uno.
+- El campo `Actividad` solo permite elegir uno.
+Si permite seleccionar múltiples, la configuración falló.
+
+**Test estructural**
+Ve a NocoDB y asegúrate de que **no existan** nuevas tablas que empiecen con `_nc_m2m_...`. Si las hay, deberás borrarlas junto a las relaciones e intentarlo nuevamente con el paso a paso.
+
+*(Nota para IA/Agentes de Código: El contexto completo y racional sobre este hack, y cómo es procesado por el modelo relacional subyacente de app.py sin impactar los JOINs, se encuentra documentado internamente en `AGENT_DOCS.md`).*
 
 ### 3. Formulario Público para Estudiantes
 

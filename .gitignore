@@ -17,3 +17,5 @@ dist/
 .installed.cfg
 *.egg
 CREDENCIALES_PRIVADAS.md
+vps_check.py
+AGENT_DOCS.md

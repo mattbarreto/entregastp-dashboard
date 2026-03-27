@@ -183,6 +183,33 @@ Para que los estudiantes puedan entregar sus trabajos, debes crear una vista de 
 
 ---
 
+## 🔒 Área Docente y Seguridad
+
+El Dashboard cuenta con rutas exclusivas para docentes que permiten visualizar métricas y calcular la calificación final de cada estudiante:
+- `/resumen`: Tabla de calificaciones y clasificación de alumnos.
+- `/api/exportar-excel`: Exporta las métricas a `.xlsx`.
+
+Estas rutas están protegidas mediante **HTTP Basic Auth**. Para usarlas en producción, debes configurar las siguientes variables en tu archivo `.env`:
+```env
+ADMIN_USER=tu_usuario
+ADMIN_PASSWORD=tu_contraseña_segura
+```
+
+---
+
+## 💾 Backups Automáticos
+
+El repositorio incluye el script `backup.sh` diseñado específicamente para hacer copias de seguridad de la base de datos de NocoDB sin necesidad de detener los contenedores de Docker.
+
+1. **Uso manual:** Simplemente ejecuta `./backup.sh` en la raíz del proyecto. El script detectará tu volumen nombrado de Docker (`noco_data`) y comprimirá los datos en la carpeta `./backups`.
+2. **Automatización:** Configura un cronjob en tu VPS para ejecutarlo diario/semanalmente.
+```bash
+# Ejemplo: Ejecutar todos los días a las 2 AM
+0 2 * * * /ruta/al/proyecto/backup.sh
+```
+
+---
+
 ## 💻 Desarrollo Local
 
 Para modificar el Dashboard Flask sin usar Docker:

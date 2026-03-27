@@ -53,10 +53,10 @@ def requires_auth(f):
 # Nombres visibles de tablas que esperamos encontrar
 # El prefijo cambia según el ID del proyecto en NocoDB (v2 suele ser nc_ID___)
 TABLE_TITLES = {
-    'Cohortes': 'nc_oniw___Cohortes',
-    'Actividades': 'nc_oniw___Actividades',
-    'Estudiantes': 'nc_oniw___Estudiantes',
-    'Entregas': 'nc_oniw___Entregas'
+    'Cohortes': None,
+    'Actividades': None,
+    'Estudiantes': None,
+    'Entregas': None
 }
 
 # Estado global de validación (se llena al arrancar)
@@ -88,56 +88,96 @@ def get_db(writable: bool = False):
 
 def discover_schema(conn: sqlite3.Connection) -> Dict[str, Dict[str, Any]]:
     """
-    Descubre el schema real de NocoDB leyendo las tablas de metadatos.
+    Descubre el schema real de NocoDB leyendo las tablas de metadatos de forma flexible.
     """
     schema = {}
     cursor = conn.cursor()
 
     try:
-        # Verificar tablas de metadatos
+        # Verificar tablas de metadatos (NocoDB v2)
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='nc_models_v2'")
-        has_models = cursor.fetchone() is not None
+        if not cursor.fetchone():
+            return {}
 
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='nc_columns_v2'")
-        has_columns = cursor.fetchone() is not None
+        # 1. Leer modelos (Tablas)
+        cursor.execute("SELECT id, table_name, title FROM nc_models_v2")
+        models_data = cursor.fetchall()
+        
+        # Mapeo de Título -> Datos de tabla
+        # Usamos búsqueda flexible (insensible a mayúsculas y plurales comunes)
+        table_targets = {
+            'Cohortes': ['Cohortes', 'Cohorte', 'Cursos'],
+            'Actividades': ['Actividades', 'Actividad', 'Tareas'],
+            'Estudiantes': ['Estudiantes', 'Estudiante', 'Alumnos'],
+            'Entregas': ['Entregas', 'Entrega', 'TPs']
+        }
 
-        if has_models and has_columns:
-            # Leer modelos (tablas)
-            cursor.execute("SELECT id, table_name, title FROM nc_models_v2")
-            models_data = cursor.fetchall()
-            models = {row['title']: row['table_name'] for row in models_data}
-            title_to_id = {row['title']: row['id'] for row in models_data}
+        found_models = {} # title_normalizado -> {id, table_name, title_original}
+        for row in models_data:
+            t_orig = row['title']
+            for norm, aliases in table_targets.items():
+                if any(a.lower() == t_orig.lower() for a in aliases):
+                    found_models[norm] = {'id': row['id'], 'table_name': row['table_name'], 'title': t_orig}
+                    break
 
-            # Leer todas las columnas
-            cursor.execute("SELECT fk_model_id, column_name, title, uidt FROM nc_columns_v2")
-            columns_data = cursor.fetchall()
-            
-            columns_by_model = {}
-            for row in columns_data:
-                mid = row['fk_model_id']
-                if mid not in columns_by_model:
-                    columns_by_model[mid] = {}
-                columns_by_model[mid][row['title']] = row['column_name']
+        # 2. Leer todas las columnas registradas en NocoDB
+        cursor.execute("SELECT fk_model_id, column_name, title, uidt FROM nc_columns_v2")
+        columns_data = cursor.fetchall()
+        
+        cols_by_model = {}
+        for row in columns_data:
+            mid = row['fk_model_id']
+            if mid not in cols_by_model:
+                cols_by_model[mid] = []
+            cols_by_model[mid].append(row)
 
-            # Mapear a estructura esperada
-            for title in ['Cohortes', 'Actividades', 'Estudiantes', 'Entregas']:
-                if title in models:
-                    mid = title_to_id[title]
-                    schema[title] = {
-                        'table_name': models[title],
-                        'columns': columns_by_model.get(mid, {})
-                    }
+        # 3. Construir esquema base
+        for norm_title, m_info in found_models.items():
+            mid = m_info['id']
+            schema[norm_title] = {
+                'id': mid,
+                'table_name': m_info['table_name'],
+                'columns': {row['title']: row['column_name'] for row in cols_by_model.get(mid, []) if row['column_name']},
+                'links': [row for row in cols_by_model.get(mid, []) if row['uidt'] == 'LinkToAnotherRecord']
+            }
 
-            if schema:
-                return schema
+        # 4. TRUCO DE MAGIA: Si no hay FK directa, buscar si el padre tiene la FK (Relación Inversa)
+        # O si hay una columna física 'nc_..._id' que no esté mapeada en NocoDB
+        for child, parent in [('Estudiantes', 'Cohortes'), ('Actividades', 'Cohortes'), 
+                             ('Entregas', 'Estudiantes'), ('Entregas', 'Actividades')]:
+            if child in schema and parent in schema:
+                # ¿Tiene el hijo una columna que apunte al padre?
+                fk_found = False
+                child_cols = schema[child]['columns']
+                
+                # Buscar por nombre físico en la tabla
+                cursor.execute(f"PRAGMA table_info({schema[child]['table_name']})")
+                physical_cols = [r['name'] for r in cursor.fetchall()]
+                
+                # Buscar cualquier columna que parezca un ID del padre
+                parent_phys_base = schema[parent]['table_name']
+                possible_fks = [c for c in physical_cols if parent_phys_base in c or parent.lower()[:-2] in c.lower()]
+                
+                if possible_fks:
+                    schema[child]['columns'][f'fk_{parent}'] = possible_fks[0]
+                    fk_found = True
+                
+                if not fk_found:
+                    # Buscar en el PADRE si existe un ID que apunte al HIJO (Relación invertida accidental)
+                    cursor.execute(f"PRAGMA table_info({schema[parent]['table_name']})")
+                    parent_phys_cols = [r['name'] for r in cursor.fetchall()]
+                    child_phys_base = schema[child]['table_name']
+                    
+                    rev_fks = [c for c in parent_phys_cols if child_phys_base in c or child.lower()[:-2] in c.lower()]
+                    if rev_fks:
+                        schema[child]['columns'][f'rev_fk_{parent}'] = rev_fks[0]
+                        logger.info(f"Detectada relación inversa: {parent}.{rev_fks[0]} apunta a {child}")
+
+        return schema
 
     except Exception as e:
-        logger.warning(f"Error en discover_schema (metadatos): {e}")
-
-    # FALLBACK: Estructura básica si falla la detección
-    for title, default_table in TABLE_TITLES.items():
-        schema[title] = {'table_name': default_table, 'columns': {}}
-    return schema
+        logger.error(f"Error crítico en discover_schema: {e}")
+        return {}
 
 
 # === VALIDACIÓN Y AUTO-FIX DEL ESQUEMA ===
@@ -192,31 +232,21 @@ def validate_schema(conn: sqlite3.Connection, schema: Dict) -> Dict[str, Any]:
     except Exception as e:
         logger.warning(f"Error buscando tablas M2M: {e}")
 
-    # 3. Verificar que las FK directas existen en las tablas hijas
+    # 3. Verificar que las FK directas existen (Soporte Smart)
     for child_title, fk_title, parent_title in EXPECTED_RELATIONS:
         if child_title in result['missing_tables'] or parent_title in result['missing_tables']:
             continue
-        child_table = get_table_name(schema, child_title)
+        
         fk_col = get_column_name(schema, child_title, fk_title)
         if not fk_col:
+            # Si no hay FK, ¿hay relación inversa?
+            if f"rev_fk_{parent_title}" in schema.get(child_title, {}).get('columns', {}):
+                continue # Todo ok, es una relación inversa detectada
+                
             result['warnings'].append(
-                f"FK faltante: '{child_title}' no tiene columna '{fk_title}' "
-                f"para referenciar a '{parent_title}'"
+                f"Relación faltante: '{child_title}' -> '{parent_title}'"
             )
             result['ok'] = False
-        else:
-            # Verificar que la columna realmente existe en la tabla física
-            try:
-                cursor.execute(f"PRAGMA table_info({child_table})")
-                physical_cols = [row['name'] for row in cursor.fetchall()]
-                if fk_col not in physical_cols:
-                    result['warnings'].append(
-                        f"FK '{fk_title}' ({fk_col}) en '{child_title}' existe en metadatos "
-                        f"pero no como columna física en {child_table}"
-                    )
-                    result['ok'] = False
-            except Exception:
-                pass
 
     return result
 
@@ -399,27 +429,40 @@ def get_column_name(schema: Dict, table_title: str, column_title: str) -> Option
     
     cols = schema[table_title]['columns']
     
-    # Intento 1: Nombre exacto
-    if column_title in cols:
-        return cols[column_title]
+    # Intento 1: Nombre exacto (case insensitive)
+    for c_title, c_phys in cols.items():
+        if c_title.lower() == column_title.lower():
+            return c_phys
     
-    # Intento 2: Alias comunes
+    # Intento 2: Búsqueda por sub-string del título
+    for c_title, c_phys in cols.items():
+        if column_title.lower() in c_title.lower():
+            return c_phys
+
+    # Intento 3: Si es una FK pre-calculada en discover_schema
+    if f"fk_{column_title}" in cols:
+        return cols[f"fk_{column_title}"]
+    if f"rev_fk_{column_title}" in cols:
+        return cols[f"rev_fk_{column_title}"]
+
+    # Intento 4: Alias predefinidos
     aliases = {
-        'Fecha Límite': ['Fecha', 'Deadline', 'Fecha_Limite'],
-        'URL Guía': ['URL_Guia', 'URL_Gu_a', 'Guia', 'Link'],
-        'Activa': ['Activo', 'Status'],
-        'Nombre': ['Title', 'Name'],
-        'Apellido': ['Lastname', 'Surname'],
-        'URL Entrega': ['URL', 'Link', 'Entrega'],
-        'Estudiante': ['Estudiante_id', 'nc_fk_estudiante_id'],
-        'Actividad': ['Actividad_id', 'nc_fk_actividad_id'],
-        'Cohorte': ['Cohorte_id', 'nc_fk_cohorte_id']
+        'Fecha Límite': ['Fecha', 'Deadline', 'Fecha_Limite', 'Entrega', 'Limit'],
+        'URL Guía': ['URL_Guia', 'URL_Gu_a', 'Guia', 'Link', 'Consigna'],
+        'Activa': ['Activo', 'Status', 'Active'],
+        'Nombre': ['Title', 'Name', 'Nombres'],
+        'Apellido': ['Lastname', 'Surname', 'Apellidos'],
+        'URL Entrega': ['URL', 'Link', 'Entrega', 'Repo'],
+        'Estudiante': ['Estudiante_id', 'Alumno', 'User'],
+        'Actividad': ['Actividad_id', 'Tarea', 'Task'],
+        'Cohorte': ['Cohorte_id', 'Curso', 'Group']
     }
     
     if column_title in aliases:
-        for alias in aliases[column_title]:
-            if alias in cols:
-                return cols[alias]
+        target_aliases = [a.lower() for a in aliases[column_title]]
+        for c_title, c_phys in cols.items():
+            if c_title.lower() in target_aliases:
+                return c_phys
                 
     return None
 
@@ -490,23 +533,66 @@ def get_matrix_data(conn: sqlite3.Connection, schema: Dict, cohorte_id: int) -> 
     col_ent_actividad = get_column_name(schema, 'Entregas', 'Actividad') or 'nc_fk_actividad_id'
 
     try:
-        # 1. Estudiantes
-        cursor.execute(f"SELECT {col_est_id} as id, {col_est_nombre} as nombre, {col_est_apellido} as apellido, {col_est_email} as email, {col_est_github} as github FROM {table_est} WHERE {col_est_cohorte} = ? ORDER BY {col_est_apellido}", (cohorte_id,))
+        # 1. Estudiantes (Soporte para relación normal o inversa)
+        if 'rev_fk_Cohortes' in schema['Estudiantes']['columns']:
+            rev_fk = schema['Estudiantes']['columns']['rev_fk_Cohortes']
+            table_coh = get_table_name(schema, 'Cohortes')
+            query_est = f"""
+                SELECT s.{col_est_id} as id, s.{col_est_nombre} as nombre, s.{col_est_apellido} as apellido, 
+                       s.{col_est_email} as email, s.{col_est_github} as github 
+                FROM {table_est} s
+                JOIN {table_coh} c ON c.{rev_fk} = s.{col_est_id}
+                WHERE c.id = ?
+                ORDER BY s.{col_est_apellido}
+            """
+            cursor.execute(query_est, (cohorte_id,))
+        else:
+            cursor.execute(f"SELECT {col_est_id} as id, {col_est_nombre} as nombre, {col_est_apellido} as apellido, {col_est_email} as email, {col_est_github} as github FROM {table_est} WHERE {col_est_cohorte} = ? ORDER BY {col_est_apellido}", (cohorte_id,))
         students = [dict(row) for row in cursor.fetchall()]
 
-        # 2. Actividades
-        cursor.execute(f"SELECT {col_act_id} as id, {col_act_nombre} as nombre, {col_act_fecha_limite} as fecha_limite, {col_act_peso} as peso FROM {table_act} WHERE {col_act_cohorte} = ? ORDER BY {col_act_orden}", (cohorte_id,))
+        # 2. Actividades (Soporte para relación normal o inversa)
+        if 'rev_fk_Cohortes' in schema['Actividades']['columns']:
+            rev_fk = schema['Actividades']['columns']['rev_fk_Cohortes']
+            table_coh = get_table_name(schema, 'Cohortes')
+            query_act = f"""
+                SELECT a.{col_act_id} as id, a.{col_act_nombre} as nombre, a.{col_act_fecha_limite} as fecha_limite, a.{col_act_peso} as peso 
+                FROM {table_act} a
+                JOIN {table_coh} c ON c.{rev_fk} = a.{col_act_id}
+                WHERE c.id = ?
+                ORDER BY a.{col_act_orden}
+            """
+            cursor.execute(query_act, (cohorte_id,))
+        else:
+            cursor.execute(f"SELECT {col_act_id} as id, {col_act_nombre} as nombre, {col_act_fecha_limite} as fecha_limite, {col_act_peso} as peso FROM {table_act} WHERE {col_act_cohorte} = ? ORDER BY {col_act_orden}", (cohorte_id,))
         activities = [dict(row) for row in cursor.fetchall()]
 
-        # 3. Entregas
+        # 3. Entregas (Búsqueda compleja con soporte para relaciones invertidas)
         student_ids = [s['id'] for s in students]
         activity_ids = [a['id'] for a in activities]
         cells = {}
 
         if student_ids and activity_ids:
+            # Construcción dinámica de la query de entregas
             placeholders_s = ','.join('?' * len(student_ids))
             placeholders_a = ','.join('?' * len(activity_ids))
+            
+            # Caso base (Relación normal: FK en Entregas)
             query_ent = f"SELECT {col_ent_estudiante} as estudiante_id, {col_ent_actividad} as actividad_id, {col_ent_estado} as estado, {col_ent_url} as url, created_at as fecha_entrega FROM {table_ent} WHERE {col_ent_estudiante} IN ({placeholders_s}) AND {col_ent_actividad} IN ({placeholders_a})"
+            
+            # Ajuste de query si hay relaciones invertidas
+            # Si Estudiante tiene la FK de Entrega
+            if 'rev_fk_Estudiantes' in schema['Entregas']['columns']:
+                rev_fk_est = schema['Entregas']['columns']['rev_fk_Estudiantes']
+                query_ent = query_ent.replace(f"WHERE {col_ent_estudiante}", f"JOIN {table_est} s_fk ON s_fk.{rev_fk_est} = {table_ent}.id WHERE s_fk.id")
+                # Necesitamos estudiante_id en el select
+                query_ent = query_ent.replace(f"SELECT {col_ent_estudiante} as estudiante_id", f"SELECT s_fk.id as estudiante_id")
+
+            # Si Actividad tiene la FK de Entrega
+            if 'rev_fk_Actividades' in schema['Entregas']['columns']:
+                rev_fk_act = schema['Entregas']['columns']['rev_fk_Actividades']
+                query_ent = query_ent.replace(f"AND {col_ent_actividad}", f"JOIN {table_act} a_fk ON a_fk.{rev_fk_act} = {table_ent}.id WHERE a_fk.id")
+                query_ent = query_ent.replace(f"{col_ent_actividad} as actividad_id", f"a_fk.id as actividad_id")
+
             cursor.execute(query_ent, student_ids + activity_ids)
             for row in cursor.fetchall():
                 cells[(row['estudiante_id'], row['actividad_id'])] = dict(row)

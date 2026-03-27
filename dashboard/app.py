@@ -51,11 +51,12 @@ def requires_auth(f):
     return decorated
 
 # Nombres visibles de tablas que esperamos encontrar
+# El prefijo cambia según el ID del proyecto en NocoDB (v2 suele ser nc_ID___)
 TABLE_TITLES = {
-    'Cohortes': 'nc_abcd_Cohortes',
-    'Actividades': 'nc_abcd_Actividades',
-    'Estudiantes': 'nc_abcd_Estudiantes',
-    'Entregas': 'nc_abcd_Entregas'
+    'Cohortes': 'nc_oniw___Cohortes',
+    'Actividades': 'nc_oniw___Actividades',
+    'Estudiantes': 'nc_oniw___Estudiantes',
+    'Entregas': 'nc_oniw___Entregas'
 }
 
 # Estado global de validación (se llena al arrancar)

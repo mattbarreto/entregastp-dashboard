@@ -8,7 +8,7 @@ import sqlite3
 import logging
 from datetime import datetime
 from typing import Optional, Dict, List, Any, Tuple
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 
 # Configuración de logs
 logging.basicConfig(level=logging.INFO)
@@ -28,17 +28,20 @@ TABLE_TITLES = {
     'Entregas': 'nc_abcd_Entregas'
 }
 
+# Estado global de validación (se llena al arrancar)
+_schema_warnings: List[str] = []
+_schema_fixed: bool = False
+
 
 # === CAPA DB ===
 
-def get_db():
+def get_db(writable: bool = False):
     """
-    Conexión SQLite read-only con timeout.
-    Cierra la conexión en finally de la ruta.
+    Conexión SQLite con timeout.
+    Por defecto abre en modo read-only. Usar writable=True solo para auto-fix.
     """
     try:
-        # En Docker usamos URI para modo ro
-        if os.path.exists(DB_PATH):
+        if os.path.exists(DB_PATH) and not writable:
             uri = f"file:{DB_PATH}?mode=ro"
             conn = sqlite3.connect(uri, uri=True, timeout=20.0)
         else:
@@ -104,6 +107,258 @@ def discover_schema(conn: sqlite3.Connection) -> Dict[str, Dict[str, Any]]:
     for title, default_table in TABLE_TITLES.items():
         schema[title] = {'table_name': default_table, 'columns': {}}
     return schema
+
+
+# === VALIDACIÓN Y AUTO-FIX DEL ESQUEMA ===
+
+# Relaciones esperadas: (tabla_hija, columna_fk_título, tabla_padre)
+EXPECTED_RELATIONS = [
+    ('Estudiantes', 'Cohorte', 'Cohortes'),
+    ('Actividades', 'Cohorte', 'Cohortes'),
+    ('Entregas', 'Estudiante', 'Estudiantes'),
+    ('Entregas', 'Actividad', 'Actividades'),
+]
+
+
+def validate_schema(conn: sqlite3.Connection, schema: Dict) -> Dict[str, Any]:
+    """
+    Valida el esquema de NocoDB detectando:
+    - Tablas faltantes
+    - Relaciones M2M (tablas intermedias m2m_) en vez de FK directas
+    - Columnas FK faltantes en tablas hijas
+    Retorna: {"ok": bool, "warnings": [...], "m2m_tables": [...], "missing_tables": [...]}
+    """
+    result = {"ok": True, "warnings": [], "m2m_tables": [], "missing_tables": []}
+    cursor = conn.cursor()
+
+    # 1. Verificar que las 4 tablas existen
+    for title in ['Cohortes', 'Actividades', 'Estudiantes', 'Entregas']:
+        table_name = get_table_name(schema, title)
+        if not table_name:
+            result['missing_tables'].append(title)
+            result['warnings'].append(f"Tabla '{title}' no encontrada en el esquema")
+            result['ok'] = False
+            continue
+        try:
+            cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+        except sqlite3.OperationalError:
+            result['missing_tables'].append(title)
+            result['warnings'].append(f"Tabla '{title}' ({table_name}) no existe en la DB")
+            result['ok'] = False
+
+    # 2. Detectar tablas M2M (señal de relaciones incorrectas)
+    try:
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%m2m%'")
+        m2m_tables = [row['name'] for row in cursor.fetchall()]
+        if m2m_tables:
+            result['m2m_tables'] = m2m_tables
+            result['warnings'].append(
+                f"Detectadas tablas M2M: {', '.join(m2m_tables)}. "
+                "Esto indica relaciones Many-to-Many en vez de FK directas (BelongsTo). "
+                "Se intentará auto-fix."
+            )
+            result['ok'] = False
+    except Exception as e:
+        logger.warning(f"Error buscando tablas M2M: {e}")
+
+    # 3. Verificar que las FK directas existen en las tablas hijas
+    for child_title, fk_title, parent_title in EXPECTED_RELATIONS:
+        if child_title in result['missing_tables'] or parent_title in result['missing_tables']:
+            continue
+        child_table = get_table_name(schema, child_title)
+        fk_col = get_column_name(schema, child_title, fk_title)
+        if not fk_col:
+            result['warnings'].append(
+                f"FK faltante: '{child_title}' no tiene columna '{fk_title}' "
+                f"para referenciar a '{parent_title}'"
+            )
+            result['ok'] = False
+        else:
+            # Verificar que la columna realmente existe en la tabla física
+            try:
+                cursor.execute(f"PRAGMA table_info({child_table})")
+                physical_cols = [row['name'] for row in cursor.fetchall()]
+                if fk_col not in physical_cols:
+                    result['warnings'].append(
+                        f"FK '{fk_title}' ({fk_col}) en '{child_title}' existe en metadatos "
+                        f"pero no como columna física en {child_table}"
+                    )
+                    result['ok'] = False
+            except Exception:
+                pass
+
+    return result
+
+
+def attempt_schema_fix(conn_rw: sqlite3.Connection, schema: Dict,
+                       validation: Dict[str, Any]) -> bool:
+    """
+    Intenta corregir relaciones M2M migrando datos a FK directas.
+    Usa una conexión de escritura.
+    
+    Estrategia:
+    1. Para cada tabla M2M detectada, identifica las tablas que conecta.
+    2. Crea una columna FK directa en la tabla hija si no existe.
+    3. Migra los datos de la tabla M2M a la nueva columna FK.
+    4. No elimina las tablas M2M (NocoDB las gestiona).
+
+    Retorna True si el fix fue exitoso.
+    """
+    if not validation['m2m_tables']:
+        return False
+
+    cursor = conn_rw.cursor()
+    fixed_something = False
+
+    for m2m_table in validation['m2m_tables']:
+        try:
+            logger.info(f"[AUTO-FIX] Analizando tabla M2M: {m2m_table}")
+
+            # Obtener columnas de la tabla M2M
+            cursor.execute(f"PRAGMA table_info({m2m_table})")
+            m2m_cols = [row['name'] for row in cursor.fetchall()]
+            logger.info(f"[AUTO-FIX] Columnas en {m2m_table}: {m2m_cols}")
+
+            # Las tablas M2M de NocoDB tienen columnas como:
+            # id, <tabla1>_id, <tabla2>_id
+            fk_cols = [c for c in m2m_cols if c != 'id' and c.endswith('_id')]
+            if len(fk_cols) != 2:
+                # Intentar buscar por otro patrón
+                fk_cols = [c for c in m2m_cols if c != 'id']
+
+            if len(fk_cols) < 2:
+                logger.warning(f"[AUTO-FIX] No se encontraron 2 FK en {m2m_table}: {fk_cols}")
+                continue
+
+            logger.info(f"[AUTO-FIX] FK detectadas en M2M: {fk_cols}")
+
+            # Determinar cuál es la tabla hija y cuál la padre
+            # basándose en las relaciones esperadas
+            for child_title, fk_title, parent_title in EXPECTED_RELATIONS:
+                child_table = get_table_name(schema, child_title)
+                parent_table = get_table_name(schema, parent_title)
+                if not child_table or not parent_table:
+                    continue
+
+                # Verificar si esta tabla M2M conecta a estas dos tablas
+                child_match = any(child_title.lower() in c.lower() for c in fk_cols)
+                parent_match = any(parent_title.lower() in c.lower() for c in fk_cols)
+
+                if not (child_match and parent_match):
+                    continue
+
+                # Identificar las columnas FK en la M2M
+                child_fk_in_m2m = next((c for c in fk_cols if child_title.lower() in c.lower()), None)
+                parent_fk_in_m2m = next((c for c in fk_cols if parent_title.lower() in c.lower()), None)
+
+                if not child_fk_in_m2m or not parent_fk_in_m2m:
+                    continue
+
+                # Nombre de la nueva columna FK directa
+                expected_fk_col = get_column_name(schema, child_title, fk_title)
+                if not expected_fk_col:
+                    expected_fk_col = f"nc_fk_{parent_title.lower()}_id"
+
+                # Verificar si la columna FK ya existe en la tabla hija
+                cursor.execute(f"PRAGMA table_info({child_table})")
+                existing_cols = [row['name'] for row in cursor.fetchall()]
+
+                if expected_fk_col not in existing_cols:
+                    logger.info(
+                        f"[AUTO-FIX] Creando columna {expected_fk_col} en {child_table}"
+                    )
+                    cursor.execute(
+                        f"ALTER TABLE {child_table} ADD COLUMN {expected_fk_col} INTEGER"
+                    )
+                    fixed_something = True
+
+                # Migrar datos de la tabla M2M a la FK directa
+                cursor.execute(f"SELECT {child_fk_in_m2m}, {parent_fk_in_m2m} FROM {m2m_table}")
+                m2m_data = cursor.fetchall()
+                logger.info(
+                    f"[AUTO-FIX] Migrando {len(m2m_data)} relaciones de {m2m_table} "
+                    f"a {child_table}.{expected_fk_col}"
+                )
+
+                for row in m2m_data:
+                    child_id = row[child_fk_in_m2m]
+                    parent_id = row[parent_fk_in_m2m]
+                    cursor.execute(
+                        f"UPDATE {child_table} SET {expected_fk_col} = ? WHERE id = ?",
+                        (parent_id, child_id)
+                    )
+                    fixed_something = True
+
+                logger.info(
+                    f"[AUTO-FIX] ✓ Migración completada: {m2m_table} → "
+                    f"{child_table}.{expected_fk_col}"
+                )
+
+        except Exception as e:
+            logger.error(f"[AUTO-FIX] Error procesando {m2m_table}: {e}")
+            continue
+
+    if fixed_something:
+        conn_rw.commit()
+        logger.info("[AUTO-FIX] ✓ Todos los cambios committeados")
+
+    return fixed_something
+
+
+def run_startup_validation():
+    """
+    Ejecuta validación y auto-fix del esquema al arrancar la app.
+    Se ejecuta una sola vez. Llena las variables globales de estado.
+    """
+    global _schema_warnings, _schema_fixed
+
+    if not os.path.exists(DB_PATH):
+        _schema_warnings = [f"Base de datos no encontrada en {DB_PATH}"]
+        logger.warning(f"[STARTUP] DB no encontrada: {DB_PATH}")
+        return
+
+    try:
+        conn = get_db()
+        schema = discover_schema(conn)
+        validation = validate_schema(conn, schema)
+        conn.close()
+
+        if validation['ok']:
+            logger.info("[STARTUP] ✓ Esquema validado correctamente")
+            return
+
+        # Hay problemas — intentar auto-fix
+        _schema_warnings = validation['warnings']
+        for w in _schema_warnings:
+            logger.warning(f"[STARTUP] {w}")
+
+        if validation['m2m_tables']:
+            logger.info("[STARTUP] Intentando auto-fix de relaciones M2M...")
+            try:
+                conn_rw = get_db(writable=True)
+                schema = discover_schema(conn_rw)
+                _schema_fixed = attempt_schema_fix(conn_rw, schema, validation)
+                conn_rw.close()
+
+                if _schema_fixed:
+                    logger.info("[STARTUP] ✓ Auto-fix exitoso")
+                    # Re-validar
+                    conn = get_db()
+                    schema = discover_schema(conn)
+                    revalidation = validate_schema(conn, schema)
+                    conn.close()
+                    if revalidation['ok']:
+                        _schema_warnings = []
+                        logger.info("[STARTUP] ✓ Re-validación exitosa")
+                    else:
+                        _schema_warnings = revalidation['warnings']
+                else:
+                    logger.warning("[STARTUP] Auto-fix no pudo corregir los problemas")
+            except Exception as e:
+                logger.error(f"[STARTUP] Error en auto-fix: {e}")
+    except Exception as e:
+        _schema_warnings = [f"Error durante validación: {e}"]
+        logger.error(f"[STARTUP] Error general: {e}")
 
 
 def get_column_name(schema: Dict, table_title: str, column_title: str) -> Optional[str]:
@@ -298,12 +553,47 @@ def index():
 
         return render_template('index.html', cohortes=cohortes, selected_cohorte=selected_cohorte, 
                                students=students, activities=activities, cells=processed_cells,
-                               students_data=students_data, entregas_por_estudiante=entregas_por_estudiante)
+                               students_data=students_data, entregas_por_estudiante=entregas_por_estudiante,
+                               schema_warnings=_schema_warnings, schema_fixed=_schema_fixed)
     finally:
         conn.close()
 
+
+@app.route('/health')
+def health():
+    """Endpoint de health-check. Verifica estado de la DB y el esquema."""
+    status = {"status": "ok", "tables": {}, "warnings": _schema_warnings, "schema_fixed": _schema_fixed}
+    try:
+        conn = get_db()
+        schema = discover_schema(conn)
+        for title in ['Cohortes', 'Actividades', 'Estudiantes', 'Entregas']:
+            table_name = get_table_name(schema, title)
+            try:
+                cursor = conn.cursor()
+                cursor.execute(f"SELECT COUNT(*) as cnt FROM {table_name}")
+                count = cursor.fetchone()['cnt']
+                status['tables'][title] = {"exists": True, "records": count}
+            except Exception:
+                status['tables'][title] = {"exists": False, "records": 0}
+                status['status'] = "degraded"
+        conn.close()
+    except Exception as e:
+        status['status'] = 'error'
+        status['error'] = str(e)
+
+    if _schema_warnings:
+        status['status'] = 'warning'
+
+    return jsonify(status)
+
+
 @app.route('/faq')
 def faq(): return render_template('faq.html')
+
+
+# === ARRANQUE ===
+# Ejecutar validación al importar el módulo
+run_startup_validation()
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

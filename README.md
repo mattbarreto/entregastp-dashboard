@@ -219,6 +219,47 @@ Para modificar el Dashboard Flask sin usar Docker:
   docker compose restart
   ```
 
+### El Dashboard muestra datos vacíos con NocoDB poblado (relaciones M2M)
+- **Causa:** Las relaciones `LinkToAnotherRecord` en NocoDB se crearon con "Permitir enlazar múltiples registros" activado, generando tablas intermedias Many-to-Many en vez de FK directas.
+- **Diagnóstico:** Accede a `/health` para verificar el estado del esquema. Si hay tablas M2M detectadas, el auto-fix intentará corregirlas al arrancar.
+- **Solución manual:** En NocoDB, elimina los campos de relación afectados y recréalos con la opción "Permitir enlazar múltiples registros" **desactivada** (esto genera una relación BelongsTo con FK directa).
+
+### NocoDB sobrescribe la base de datos pre-poblada
+- **Causa:** NocoDB es dueño exclusivo de su archivo SQLite. No se puede pre-poblar la DB externamente.
+- **Solución:** Dejar que NocoDB gestione su propia DB. Usar la UI o la REST API para cargar datos.
+
+---
+
+## ✅ Verificación Post-Despliegue
+
+### Health-Check del Dashboard
+
+El dashboard expone un endpoint `/health` que verifica el estado de la DB y el esquema:
+
+```bash
+curl https://seguimientotps.matiasbarreto.com/health
+```
+
+Respuesta esperada:
+```json
+{
+  "status": "ok",
+  "tables": {"Cohortes": {"exists": true, "records": 1}, ...},
+  "warnings": [],
+  "schema_fixed": false
+}
+```
+
+### Verificación Remota del Esquema de NocoDB
+
+Desde Windows, usa el script `verify_nocodb_schema.ps1` que verifica las tablas y relaciones vía REST API:
+
+```powershell
+$env:NOCODB_TOKEN = "tu-api-token"  # Token: entregastp-cli
+$env:NOCODB_URL = "https://nocodb.matiasbarreto.com"
+.\verify_nocodb_schema.ps1
+```
+
 ---
 
 ## 📄 Licencia

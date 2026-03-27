@@ -1,0 +1,63 @@
+# entregastp-dashboard: NocoDB + Flask Dashboard
+# Uso: docker compose up -d
+#
+# Para activar Traefik: descomentar las labels y la red proxy.
+
+services:
+  # === NocoDB: Backend de datos ===
+  nocodb:
+    image: nocodb/nocodb:latest
+    container_name: entregas-nocodb
+    restart: unless-stopped
+    volumes:
+      - noco_data:/usr/app/data/
+    environment:
+      - NC_DB=sqlite3:///usr/app/data/noco.db
+      - NC_PUBLIC_URL=${NOCODB_PUBLIC_URL:-http://localhost:8080}
+    ports:
+      - "8080:8080"
+    # --- Traefik (descomentar en producción) ---
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.http.routers.nocodb.rule=Host(`nocodb.matiasbarreto.com`)"
+    #   - "traefik.http.routers.nocodb.entrypoints=websecure"
+    #   - "traefik.http.routers.nocodb.tls.certresolver=letsencrypt"
+    #   - "traefik.http.services.nocodb.loadbalancer.server.port=8080"
+    # networks:
+    #   - proxy
+
+  # === Dashboard Flask: Visualización ===
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: entregas-dashboard
+    restart: unless-stopped
+    depends_on:
+      nocodb:
+        condition: service_started
+    volumes:
+      - noco_data:/data:ro  # Monta el mismo volumen, solo lectura
+    environment:
+      - NOCODB_DB_PATH=/data/noco.db
+      - COHORTE_FILTRAR_ACTIVAS=${COHORTE_FILTRAR_ACTIVAS:-true}
+    ports:
+      - "5000:5000"
+    # --- Traefik (descomentar en producción) ---
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.http.routers.dashboard.rule=Host(`seguimientotps.matiasbarreto.com`)"
+    #   - "traefik.http.routers.dashboard.entrypoints=websecure"
+    #   - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+    #   - "traefik.http.services.dashboard.loadbalancer.server.port=5000"
+    # networks:
+    #   - proxy
+
+volumes:
+  noco_data:
+    driver: local
+
+# --- Red Traefik (descomentar en producción) ---
+# networks:
+#   proxy:
+#     external: true

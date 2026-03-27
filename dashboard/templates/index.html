@@ -489,6 +489,29 @@
             </form>
         </header>
 
+        <!-- Banner de advertencia de esquema -->
+        {% if schema_warnings %}
+        <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 14px 20px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 10px;">
+            <span style="font-size: 20px;">⚠️</span>
+            <div>
+                <strong style="color: #92400e; font-size: 14px;">Problemas detectados en el esquema de NocoDB</strong>
+                <ul style="margin: 6px 0 0 16px; font-size: 13px; color: #78350f;">
+                    {% for warning in schema_warnings %}
+                    <li>{{ warning }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% elif schema_fixed %}
+        <div style="background: #d1fae5; border: 1px solid #10b981; border-radius: 8px; padding: 14px 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 20px;">✅</span>
+            <div>
+                <strong style="color: #065f46; font-size: 14px;">Auto-fix aplicado exitosamente</strong>
+                <p style="margin: 2px 0 0; font-size: 13px; color: #047857;">Se detectaron relaciones M2M y se migraron a FK directas. Verificá los datos en el dashboard.</p>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Tabla matriz -->
         {% if students and activities %}
         <div class="table-container">

@@ -2,6 +2,11 @@
 """
 Genera una base de datos SQLite de prueba que imita la estructura interna de NocoDB.
 Usada para desarrollo local del dashboard sin necesidad de tener NocoDB corriendo.
+
+⚠️ IMPORTANTE: Este script es SOLO para desarrollo local.
+NO usar en producción con NocoDB real. NocoDB es dueño exclusivo de su archivo
+SQLite y reiniciará cualquier DB pre-poblada externamente.
+(Ver Incidencia 3 del informe de despliegue, 27/03/2026)
 """
 
 import sqlite3
@@ -207,6 +212,16 @@ def populate_data(conn):
     ''', (cohorte_id, "2026-Q1-Redes", "Tecnicatura Redes", "Q1", 2026,
           "2026-03-01", "2026-07-15", 1, now.isoformat()))
 
+    # Crear cohorte inactiva (para testear filtro FILTRAR_ACTIVAS)
+    cohorte_inactiva_id = 2
+    cursor.execute('''
+        INSERT INTO nc_abcd_Cohortes (id, nc_c1_Nombre, nc_c2_Curso, nc_c3_Cuatrimestre,
+                                      nc_c4_Ano, nc_c5_Fecha_Inicio, nc_c6_Fecha_Fin,
+                                      nc_c7_Activa, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (cohorte_inactiva_id, "2025-Q2-Python", "Tecnicatura Python", "Q2", 2025,
+          "2025-08-01", "2025-12-15", 0, now.isoformat()))
+
     # Crear 7 actividades: 5 semanales + 2 TPs integradores
     actividades = [
         # Semanales (peso 1)
@@ -259,7 +274,7 @@ def populate_data(conn):
             if actividad_id <= 2:  # Semana 1 y 2 (vencidas) - mayoría entregó
                 if rand < 0.7:  # 70% entregó
                     # Mix de a tiempo y tarde
-                    estado = "Corregido" if random.random() < 0.5 else "Entregado"
+                    estado = "Corregido" if random.random() < 0.4 else ("Rehacer" if random.random() < 0.2 else "Entregado")
                     fecha_entrega = fecha_limite - timedelta(hours=random.randint(1, 48)) if random.random() < 0.6 else fecha_limite + timedelta(hours=random.randint(1, 24))
                     url = f"https://github.com/entrega{estudiante_id}/{actividad[1].replace(' ', '').lower()}"
                     entregas.append((entrega_id, url, None, estado, estudiante_id, actividad_id, fecha_entrega.isoformat()))
@@ -320,9 +335,10 @@ def main():
         print(f"\nBase de datos lista en: {DB_PATH}")
         print("\nResumen:")
         print("  - 1 cohorte activa (2026-Q1-Redes)")
-        print("  - 5 actividades (Semana 1-5)")
+        print("  - 1 cohorte inactiva (2025-Q2-Python)")
+        print("  - 7 actividades (Semana 1-5 + 2 TPs Integradores)")
         print("  - 8 estudiantes")
-        print("  - Mix de entregas: verdes, amarillas, rojas y grises")
+        print("  - Mix de entregas: verdes, amarillas (Rehacer), rojas y grises")
 
     finally:
         conn.close()

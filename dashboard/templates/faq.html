@@ -166,6 +166,52 @@
             color: #60a5fa;
             text-decoration: none;
         }
+    
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .faq-item {
+            margin-bottom: 16px;
+            padding-bottom: 0;
+            border-bottom: none;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+        .faq-item:hover {
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.08);
+            border-color: #cbd5e1;
+        }
+        .faq-question {
+            padding: 16px;
+            margin-bottom: 0;
+            background: #f8fafc;
+            border-bottom: 1px solid transparent;
+            transition: background 0.2s;
+        }
+        .faq-question:hover {
+            background: #f1f5f9;
+        }
+        details[open] .faq-question {
+            border-bottom-color: var(--border-color);
+            background: white;
+        }
+        .faq-answer {
+            padding: 16px;
+            padding-top: 8px;
+            color: var(--text-secondary);
+            background: white;
+            line-height: 1.7;
+        }
+        .faq-question::before {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -187,84 +233,126 @@
         <div class="faq-section">
             <h2>📌 General</h2>
 
-            <div class="faq-item">
-                <div class="faq-question">¿Qué es este sistema?</div>
-                <div class="faq-answer">
+                        <details class="faq-item group">
+                <summary class="faq-question list-none cursor-pointer outline-none select-none flex justify-between items-center pr-4 relative">
+                    <span class="flex items-center gap-2"><span class="text-xl">❓</span> ¿Qué es este sistema?</span>
+                    <span class="transition-transform duration-300 group-open:rotate-180 flex-shrink-0 opacity-50">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </summary>
+                <div class="faq-answer mt-3 pt-3 opacity-0 group-open:animate-[fadeIn_0.3s_ease-out_forwards] border-t border-slate-100">
                     Es una plataforma self-hosted para el seguimiento de entregas de estudiantes en cursos de tecnicatura superior. Permite a los docentes y ayudantes visualizar el estado de las entregas semanales y trabajos prácticos integradores.
                 </div>
-            </div>
+            </details>
 
-            <div class="faq-item">
-                <div class="faq-question">¿Quién puede acceder al sistema?</div>
-                <div class="faq-answer">
+                        <details class="faq-item group">
+                <summary class="faq-question list-none cursor-pointer outline-none select-none flex justify-between items-center pr-4 relative">
+                    <span class="flex items-center gap-2"><span class="text-xl">❓</span> ¿Quién puede acceder al sistema?</span>
+                    <span class="transition-transform duration-300 group-open:rotate-180 flex-shrink-0 opacity-50">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </summary>
+                <div class="faq-answer mt-3 pt-3 opacity-0 group-open:animate-[fadeIn_0.3s_ease-out_forwards] border-t border-slate-100">
                     <strong>Estudiantes:</strong> Acceden únicamente al formulario de entregas (público).<br>
                     <strong>Docentes/Ayudantes:</strong> Acceden al panel de administración de NocoDB y al Dashboard de seguimiento.
                 </div>
-            </div>
+            </details>
         </div>
 
         <!-- Sección: Gestión de Cohortes -->
         <div class="faq-section">
             <h2>👥 Gestión de Cohortes</h2>
 
-            <div class="faq-item">
-                <div class="faq-question">¿Cómo inicializo las tablas de la base de datos?</div>
-                <div class="faq-answer">
+                        <details class="faq-item group">
+                <summary class="faq-question list-none cursor-pointer outline-none select-none flex justify-between items-center pr-4 relative">
+                    <span class="flex items-center gap-2"><span class="text-xl">❓</span> ¿Cómo inicializo las tablas de la base de datos?</span>
+                    <span class="transition-transform duration-300 group-open:rotate-180 flex-shrink-0 opacity-50">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </summary>
+                <div class="faq-answer mt-3 pt-3 opacity-0 group-open:animate-[fadeIn_0.3s_ease-out_forwards] border-t border-slate-100">
                     La forma más rápida es usar el script <code>python create_noco_tables.py</code> incluido en el repositorio. Solicitará tu credencial de NocoDB y construirá todas las tablas, columnas y relaciones automáticamente por la API.
                 </div>
-            </div>
+            </details>
 
-            <div class="faq-item">
-                <div class="faq-question">¿Cómo creo una nueva cohorte?</div>
-                <div class="faq-answer">
+                        <details class="faq-item group">
+                <summary class="faq-question list-none cursor-pointer outline-none select-none flex justify-between items-center pr-4 relative">
+                    <span class="flex items-center gap-2"><span class="text-xl">❓</span> ¿Cómo creo una nueva cohorte?</span>
+                    <span class="transition-transform duration-300 group-open:rotate-180 flex-shrink-0 opacity-50">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </summary>
+                <div class="faq-answer mt-3 pt-3 opacity-0 group-open:animate-[fadeIn_0.3s_ease-out_forwards] border-t border-slate-100">
                     1. Accede a tu panel administrativo de NocoDB<br>
                     2. Ve a la tabla <strong>Cohortes</strong><br>
                     3. Haz clic en <strong>+ Nuevo</strong><br>
                     4. Completa el Nombre de la cohorte<br>
                     5. Marca la casilla <strong>Activa</strong> para que aparezca en el dashboard
-                    <div class="tip">Usa nombres descriptivos como "pln-1c-2026" para identificar fácilmente cada cohorte.</div>
+                    <div class="tip">Usa nombres descriptivos como "pln-1c-2026" para identificar fácilmente cada cohorte.
                 </div>
+            </details>
             </div>
 
-            <div class="faq-item">
-                <div class="faq-question">¿Cómo desactivo una cohorte que ya terminó?</div>
-                <div class="faq-answer">
+                        <details class="faq-item group">
+                <summary class="faq-question list-none cursor-pointer outline-none select-none flex justify-between items-center pr-4 relative">
+                    <span class="flex items-center gap-2"><span class="text-xl">❓</span> ¿Cómo desactivo una cohorte que ya terminó?</span>
+                    <span class="transition-transform duration-300 group-open:rotate-180 flex-shrink-0 opacity-50">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </summary>
+                <div class="faq-answer mt-3 pt-3 opacity-0 group-open:animate-[fadeIn_0.3s_ease-out_forwards] border-t border-slate-100">
                     Edita la cohorte en NocoDB y desmarca el checkbox <strong>Activa</strong>. Esto la ocultará del dashboard pero conservará todos los datos para consultas futuras.
                 </div>
-            </div>
+            </details>
         </div>
 
         <!-- Sección: Estudiantes -->
         <div class="faq-section">
             <h2>🎓 Gestión de Estudiantes</h2>
 
-            <div class="faq-item">
-                <div class="faq-question">¿Cómo cargo estudiantes desde CSV?</div>
-                <div class="faq-answer">
+                        <details class="faq-item group">
+                <summary class="faq-question list-none cursor-pointer outline-none select-none flex justify-between items-center pr-4 relative">
+                    <span class="flex items-center gap-2"><span class="text-xl">❓</span> ¿Cómo cargo estudiantes desde CSV?</span>
+                    <span class="transition-transform duration-300 group-open:rotate-180 flex-shrink-0 opacity-50">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </summary>
+                <div class="faq-answer mt-3 pt-3 opacity-0 group-open:animate-[fadeIn_0.3s_ease-out_forwards] border-t border-slate-100">
                     1. Prepara un archivo CSV con columnas: <code>Nombre,Apellido,Email,GitHub</code><br>
                     2. En NocoDB, tabla <strong>Estudiantes</strong>, haz clic en los tres puntos (⋯)<br>
                     3. Selecciona <strong>Importar CSV</strong><br>
                     4. Selecciona el archivo y mapea las columnas<br>
                     5. Asigna la cohorte correspondiente a todos los importados
-                    <div class="warning">Asegúrate de que el campo GitHub incluya la URL completa (https://github.com/usuario)</div>
+                    <div class="warning">Asegúrate de que el campo GitHub incluya la URL completa (https://github.com/usuario)
                 </div>
+            </details>
             </div>
 
-            <div class="faq-item">
-                <div class="faq-question">¿Puedo agregar estudiantes individualmente?</div>
-                <div class="faq-answer">
+                        <details class="faq-item group">
+                <summary class="faq-question list-none cursor-pointer outline-none select-none flex justify-between items-center pr-4 relative">
+                    <span class="flex items-center gap-2"><span class="text-xl">❓</span> ¿Puedo agregar estudiantes individualmente?</span>
+                    <span class="transition-transform duration-300 group-open:rotate-180 flex-shrink-0 opacity-50">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </summary>
+                <div class="faq-answer mt-3 pt-3 opacity-0 group-open:animate-[fadeIn_0.3s_ease-out_forwards] border-t border-slate-100">
                     Sí. En la tabla <strong>Estudiantes</strong> de NocoDB, haz clic en <strong>+ Nuevo</strong> y completa los campos manualmente.
                 </div>
-            </div>
+            </details>
         </div>
 
         <!-- Sección: Actividades -->
         <div class="faq-section">
             <h2>📚 Gestión de Actividades</h2>
 
-            <div class="faq-item">
-                <div class="faq-question">¿Cómo creo una nueva semana/actividad?</div>
-                <div class="faq-answer">
+                        <details class="faq-item group">
+                <summary class="faq-question list-none cursor-pointer outline-none select-none flex justify-between items-center pr-4 relative">
+                    <span class="flex items-center gap-2"><span class="text-xl">❓</span> ¿Cómo creo una nueva semana/actividad?</span>
+                    <span class="transition-transform duration-300 group-open:rotate-180 flex-shrink-0 opacity-50">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </summary>
+                <div class="faq-answer mt-3 pt-3 opacity-0 group-open:animate-[fadeIn_0.3s_ease-out_forwards] border-t border-slate-100">
                     1. En NocoDB, ve a la tabla <strong>Actividades</strong><br>
                     2. Haz clic en <strong>+ Nuevo</strong><br>
                     3. Completa:
@@ -278,25 +366,35 @@
                     </ul>
                     4. Asigna a la cohorte correspondiente
                 </div>
-            </div>
+            </details>
 
-            <div class="faq-item">
-                <div class="faq-question">¿Qué diferencia hay entre "Semanal" e "Integrador"?</div>
-                <div class="faq-answer">
+                        <details class="faq-item group">
+                <summary class="faq-question list-none cursor-pointer outline-none select-none flex justify-between items-center pr-4 relative">
+                    <span class="flex items-center gap-2"><span class="text-xl">❓</span> ¿Qué diferencia hay entre "Semanal" e "Integrador"?</span>
+                    <span class="transition-transform duration-300 group-open:rotate-180 flex-shrink-0 opacity-50">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </summary>
+                <div class="faq-answer mt-3 pt-3 opacity-0 group-open:animate-[fadeIn_0.3s_ease-out_forwards] border-t border-slate-100">
                     <strong>Semanal:</strong> Actividades de práctica que miden participación activa. Pesan 20% en la calificación final.<br>
                     <strong>Integrador:</strong> Trabajos prácticos evaluativos. Cada uno pesa 40% en la calificación final.<br><br>
                     El sistema calcula automáticamente el índice final ponderado.
                 </div>
-            </div>
+            </details>
         </div>
 
         <!-- Sección: Corrección -->
         <div class="faq-section">
             <h2>✅ Corrección de Entregas</h2>
 
-            <div class="faq-item">
-                <div class="faq-question">¿Cómo corrijo una entrega?</div>
-                <div class="faq-answer">
+                        <details class="faq-item group">
+                <summary class="faq-question list-none cursor-pointer outline-none select-none flex justify-between items-center pr-4 relative">
+                    <span class="flex items-center gap-2"><span class="text-xl">❓</span> ¿Cómo corrijo una entrega?</span>
+                    <span class="transition-transform duration-300 group-open:rotate-180 flex-shrink-0 opacity-50">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </summary>
+                <div class="faq-answer mt-3 pt-3 opacity-0 group-open:animate-[fadeIn_0.3s_ease-out_forwards] border-t border-slate-100">
                     1. Accede a la tabla <strong>Entregas</strong> en NocoDB<br>
                     2. Busca la entrega por estudiante o actividad<br>
                     3. Cambia el campo <strong>Estado</strong>:
@@ -308,11 +406,16 @@
                     </ul>
                     4. Agrega <strong>Observaciones</strong> si es necesario
                 </div>
-            </div>
+            </details>
 
-            <div class="faq-item">
-                <div class="faq-question">¿Cómo sé si una entrega fue tarde?</div>
-                <div class="faq-answer">
+                        <details class="faq-item group">
+                <summary class="faq-question list-none cursor-pointer outline-none select-none flex justify-between items-center pr-4 relative">
+                    <span class="flex items-center gap-2"><span class="text-xl">❓</span> ¿Cómo sé si una entrega fue tarde?</span>
+                    <span class="transition-transform duration-300 group-open:rotate-180 flex-shrink-0 opacity-50">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </summary>
+                <div class="faq-answer mt-3 pt-3 opacity-0 group-open:animate-[fadeIn_0.3s_ease-out_forwards] border-t border-slate-100">
                     El sistema compara automáticamente la <strong>Fecha Entrega</strong> (cuando el estudiante envió) con la <strong>Fecha Límite</strong> de la actividad. En el dashboard se muestran:
                     <ul style="margin: 8px 0; padding-left: 20px;">
                         <li>🟢 Verde: Entregado a tiempo</li>
@@ -320,16 +423,21 @@
                         <li>🔴 Rojo: No entregado (vencido)</li>
                     </ul>
                 </div>
-            </div>
+            </details>
         </div>
 
         <!-- Sección: Dashboard -->
         <div class="faq-section">
             <h2>📊 Uso del Dashboard</h2>
 
-            <div class="faq-item">
-                <div class="faq-question">¿Cómo veo el detalle de un estudiante?</div>
-                <div class="faq-answer">
+                        <details class="faq-item group">
+                <summary class="faq-question list-none cursor-pointer outline-none select-none flex justify-between items-center pr-4 relative">
+                    <span class="flex items-center gap-2"><span class="text-xl">❓</span> ¿Cómo veo el detalle de un estudiante?</span>
+                    <span class="transition-transform duration-300 group-open:rotate-180 flex-shrink-0 opacity-50">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </summary>
+                <div class="faq-answer mt-3 pt-3 opacity-0 group-open:animate-[fadeIn_0.3s_ease-out_forwards] border-t border-slate-100">
                     Haz clic en el nombre del estudiante en la primera columna del dashboard. Se abrirá un panel lateral con:
                     <ul style="margin: 8px 0; padding-left: 20px;">
                         <li>Email y GitHub</li>
@@ -337,11 +445,16 @@
                         <li>Estado de cada entrega</li>
                     </ul>
                 </div>
-            </div>
+            </details>
 
-            <div class="faq-item">
-                <div class="faq-question">¿Qué muestra la vista de Resumen?</div>
-                <div class="faq-answer">
+                        <details class="faq-item group">
+                <summary class="faq-question list-none cursor-pointer outline-none select-none flex justify-between items-center pr-4 relative">
+                    <span class="flex items-center gap-2"><span class="text-xl">❓</span> ¿Qué muestra la vista de Resumen?</span>
+                    <span class="transition-transform duration-300 group-open:rotate-180 flex-shrink-0 opacity-50">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </summary>
+                <div class="faq-answer mt-3 pt-3 opacity-0 group-open:animate-[fadeIn_0.3s_ease-out_forwards] border-t border-slate-100">
                     La vista <strong>/resumen</strong> es exclusiva para docentes y muestra:
                     <ul style="margin: 8px 0; padding-left: 20px;">
                         <li>Ranking de estudiantes por índice de cumplimiento</li>
@@ -351,56 +464,81 @@
                         <li>Exportación a Excel</li>
                     </ul>
                 </div>
-            </div>
+            </details>
 
-            <div class="faq-item">
-                <div class="faq-question">¿Cómo exporto a Excel?</div>
-                <div class="faq-answer">
+                        <details class="faq-item group">
+                <summary class="faq-question list-none cursor-pointer outline-none select-none flex justify-between items-center pr-4 relative">
+                    <span class="flex items-center gap-2"><span class="text-xl">❓</span> ¿Cómo exporto a Excel?</span>
+                    <span class="transition-transform duration-300 group-open:rotate-180 flex-shrink-0 opacity-50">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </summary>
+                <div class="faq-answer mt-3 pt-3 opacity-0 group-open:animate-[fadeIn_0.3s_ease-out_forwards] border-t border-slate-100">
                     En la vista <strong>Resumen</strong>, haz clic en el botón <strong>📊 Exportar Excel</strong>. Se descargará un archivo con dos hojas:
                     <ul style="margin: 8px 0; padding-left: 20px;">
                         <li><strong>Resumen:</strong> Una fila por estudiante con métricas</li>
                         <li><strong>Detalle:</strong> Todas las entregas con estado</li>
                     </ul>
                 </div>
-            </div>
+            </details>
         </div>
 
         <!-- Sección: Troubleshooting -->
         <div class="faq-section">
             <h2>🔧 Troubleshooting</h2>
 
-            <div class="faq-item">
-                <div class="faq-question">El dashboard muestra "No hay datos para mostrar"</div>
-                <div class="faq-answer">
+                        <details class="faq-item group">
+                <summary class="faq-question list-none cursor-pointer outline-none select-none flex justify-between items-center pr-4 relative">
+                    <span class="flex items-center gap-2"><span class="text-xl">❓</span> El dashboard muestra "No hay datos para mostrar"</span>
+                    <span class="transition-transform duration-300 group-open:rotate-180 flex-shrink-0 opacity-50">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </summary>
+                <div class="faq-answer mt-3 pt-3 opacity-0 group-open:animate-[fadeIn_0.3s_ease-out_forwards] border-t border-slate-100">
                     Verifica que:<br>
                     1. Exista al menos una cohorte activa<br>
                     2. La cohorte tenga alumnos y actividades cargadas<br>
                     3. La variable de entorno <code>NOCODB_DB_PATH</code> apunte a la base correcta en el volumen Docker (<code>/data/noco.db</code>)
                 </div>
-            </div>
+            </details>
 
-            <div class="faq-item">
-                <div class="faq-question">Error "database is locked" (SQLite)</div>
-                <div class="faq-answer">
+                        <details class="faq-item group">
+                <summary class="faq-question list-none cursor-pointer outline-none select-none flex justify-between items-center pr-4 relative">
+                    <span class="flex items-center gap-2"><span class="text-xl">❓</span> Error "database is locked" (SQLite)</span>
+                    <span class="transition-transform duration-300 group-open:rotate-180 flex-shrink-0 opacity-50">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </summary>
+                <div class="faq-answer mt-3 pt-3 opacity-0 group-open:animate-[fadeIn_0.3s_ease-out_forwards] border-t border-slate-100">
                     Esto ocurría en despliegues antiguos. El sistema actual accede a NocoDB en modo estricto de <strong>Solo Lectura (Read-Only)</strong> con un timeout de 20s, por ende ya no deberían ocurrir bloqueos de concurrencia en producción. Si persisten problemas, revisa que el contenedor Docker no esté saturando el disco.
                 </div>
-            </div>
+            </details>
 
-            <div class="faq-item">
-                <div class="faq-question">El Dashboard no computa los datos (Relaciones M2M corruptas)</div>
-                <div class="faq-answer">
+                        <details class="faq-item group">
+                <summary class="faq-question list-none cursor-pointer outline-none select-none flex justify-between items-center pr-4 relative">
+                    <span class="flex items-center gap-2"><span class="text-xl">❓</span> El Dashboard no computa los datos (Relaciones M2M corruptas)</span>
+                    <span class="transition-transform duration-300 group-open:rotate-180 flex-shrink-0 opacity-50">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </summary>
+                <div class="faq-answer mt-3 pt-3 opacity-0 group-open:animate-[fadeIn_0.3s_ease-out_forwards] border-t border-slate-100">
                     Si al configurar NocoDB marcaste accidentalmente "Permitir enlazar múltiples registros" en las claves foráneas (ej: de Estudiante a Cohorte), NocoDB genera tablas intermedias "Many-to-Many". El Dashboard trae incorporada una función de <strong>Auto-Fix</strong> que intentará detectar y reparar el esquema SQLite en vivo cuando inicia. Si el error persiste, asegúrate de desmarcar manualmente el checkbox en la vista web de NocoDB.
                 </div>
-            </div>
+            </details>
 
-            <div class="faq-item">
-                <div class="faq-question">Las nuevas columnas no aparecen en el dashboard</div>
-                <div class="faq-answer">
+                        <details class="faq-item group">
+                <summary class="faq-question list-none cursor-pointer outline-none select-none flex justify-between items-center pr-4 relative">
+                    <span class="flex items-center gap-2"><span class="text-xl">❓</span> Las nuevas columnas no aparecen en el dashboard</span>
+                    <span class="transition-transform duration-300 group-open:rotate-180 flex-shrink-0 opacity-50">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </summary>
+                <div class="faq-answer mt-3 pt-3 opacity-0 group-open:animate-[fadeIn_0.3s_ease-out_forwards] border-t border-slate-100">
                     El dashboard usa un <strong>descubrimiento dinámico de esquema</strong> (leyendo los metadatos internos <code>nc_models_v2</code> y <code>nc_columns_v2</code>). Si cambias los nombres de tus columnas o tablas en producción:<br>
                     1. Reinicia el contenedor del dashboard: <code>docker compose restart dashboard</code><br>
                     2. El sistema mapeará el nuevo SQL al iniciar.
                 </div>
-            </div>
+            </details>
         </div>
 
         <!-- Contacto -->

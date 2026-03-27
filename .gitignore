@@ -16,3 +16,4 @@ dist/
 *.egg-info/
 .installed.cfg
 *.egg
+CREDENCIALES_PRIVADAS.md

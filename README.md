@@ -237,7 +237,7 @@ Para modificar el Dashboard Flask sin usar Docker:
 El dashboard expone un endpoint `/health` que verifica el estado de la DB y el esquema:
 
 ```bash
-curl https://seguimientotps.matiasbarreto.com/health
+curl https://seguimientotps.tudominio.com/health
 ```
 
 Respuesta esperada:
@@ -256,7 +256,7 @@ Desde Windows, usa el script `verify_nocodb_schema.ps1` que verifica las tablas 
 
 ```powershell
 $env:NOCODB_TOKEN = "tu-api-token"  # Token: entregastp-cli
-$env:NOCODB_URL = "https://nocodb.matiasbarreto.com"
+$env:NOCODB_URL = "https://nocodb.tudominio.com"
 .\verify_nocodb_schema.ps1
 ```
 

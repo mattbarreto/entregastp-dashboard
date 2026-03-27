@@ -11,22 +11,13 @@ def main():
     conn.row_factory = dict_factory
     cursor = conn.cursor()
 
-    print("=== ESTUDIANTES DATA CHECK ===")
-    cursor.execute("PRAGMA table_info(nc_oniw___Estudiantes)")
-    cols = [r['name'] for r in cursor.fetchall()]
+    print("=== ACTIVIDADES COLS ===")
+    cursor.execute("PRAGMA table_info(nc_oniw___Actividades)")
+    print(cursor.fetchall())
     
-    fk_col = next((c for c in cols if 'Cohortes_id' in c), None)
-    if fk_col:
-        print(f"Found FK Col: {fk_col}")
-        cursor.execute(f"SELECT COUNT(*) as count, {fk_col} FROM nc_oniw___Estudiantes GROUP BY {fk_col}")
-        print(f"Stats by Cohort ID: {cursor.fetchall()}")
-    else:
-        print("FK Col NOT FOUND in Estudiantes. Cols: ", cols)
-
-    print("\n=== ENTREGAS DATA CHECK ===")
-    cursor.execute("PRAGMA table_info(nc_oniw___Entregas)")
-    ent_cols = [r['name'] for r in cursor.fetchall()]
-    print(f"Cols in Entregas: {ent_cols}")
+    print("\n=== COLUMNS METADATA ===")
+    cursor.execute("SELECT m.title as table_title, c.title as col_title, c.column_name FROM nc_columns_v2 c JOIN nc_models_v2 m ON m.id = c.fk_model_id WHERE m.title = 'Actividades'")
+    print(cursor.fetchall())
 
     conn.close()
 

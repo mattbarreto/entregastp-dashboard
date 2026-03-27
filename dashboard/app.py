@@ -16,6 +16,16 @@ from functools import wraps
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+import unicodedata
+
+def normalize_str(s: str) -> str:
+    """Normaliza un string eliminando acentos y convirtiendo a minúsculas."""
+    if not s: return ""
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', s.lower())
+        if unicodedata.category(c) != 'Mn'
+    )
+
 app = Flask(__name__)
 
 # === CONFIGURACIÓN ===
@@ -426,24 +436,25 @@ def run_startup_validation():
 
 
 def get_column_name(schema: Dict, table_title: str, column_title: str) -> Optional[str]:
-    """Obtiene el nombre físico de una columna con soporte para alias comunes."""
+    """Obtiene el nombre físico de una columna con soporte para alias comunes y acentos."""
     if table_title not in schema:
         return None
     
     cols = schema[table_title]['columns']
+    norm_target = normalize_str(column_title)
     
-    # Intento 1: Nombre exacto (case insensitive)
+    # Intento 1: Nombre exacto (normalizado)
     for c_title, c_phys in cols.items():
-        if c_title.lower() == column_title.lower():
+        if normalize_str(c_title) == norm_target:
             return c_phys
     
-    # Intento 2: Búsqueda por sub-string del título
+    # Intento 2: Búsqueda por sub-string del título (normalizado)
     for c_title, c_phys in cols.items():
-        if column_title.lower() in c_title.lower():
+        if norm_target in normalize_str(c_title):
             return c_phys
 
     # Intento 3: Si es una FK pre-calculada en discover_schema
-    norm_title = column_title.rstrip('s')
+    norm_title = norm_target.rstrip('s')
     if f"fk_{norm_title}" in cols:
         return cols[f"fk_{norm_title}"]
     if f"rev_fk_{norm_title}" in cols:
@@ -451,21 +462,21 @@ def get_column_name(schema: Dict, table_title: str, column_title: str) -> Option
 
     # Intento 4: Alias predefinidos
     aliases = {
-        'Fecha Límite': ['Fecha', 'Deadline', 'Fecha_Limite', 'Entrega', 'Limit'],
-        'URL Guía': ['URL_Guia', 'URL_Gu_a', 'Guia', 'Link', 'Consigna'],
-        'Activa': ['Activo', 'Status', 'Active'],
+        'Fecha Límite': ['Fecha', 'Deadline', 'Fecha_Limite', 'Entrega', 'Limit', 'Fecha_limite'],
+        'URL Guía': ['URL_Guia', 'URL_Gu_a', 'Guia', 'Link', 'Consigna', 'Gu_a'],
+        'Activa': ['Activo', 'Status', 'Active', 'Estado'],
         'Nombre': ['Title', 'Name', 'Nombres'],
         'Apellido': ['Lastname', 'Surname', 'Apellidos'],
-        'URL Entrega': ['URL', 'Link', 'Entrega', 'Repo'],
-        'Estudiante': ['Estudiante_id', 'Alumno', 'User'],
-        'Actividad': ['Actividad_id', 'Tarea', 'Task'],
-        'Cohorte': ['Cohorte_id', 'Curso', 'Group']
+        'URL Entrega': ['URL', 'Link', 'Entrega', 'Repo', 'URL_Entrega'],
+        'Estudiante': ['Estudiante_id', 'Alumno', 'User', 'Estudiante'],
+        'Actividad': ['Actividad_id', 'Tarea', 'Task', 'Actividad'],
+        'Cohorte': ['Cohorte_id', 'Curso', 'Group', 'Cohorte']
     }
     
     if column_title in aliases:
-        target_aliases = [a.lower() for a in aliases[column_title]]
+        target_aliases = [normalize_str(a) for a in aliases[column_title]]
         for c_title, c_phys in cols.items():
-            if c_title.lower() in target_aliases:
+            if normalize_str(c_title) in target_aliases:
                 return c_phys
                 
     return None
@@ -516,7 +527,7 @@ def get_matrix_data(conn: sqlite3.Connection, schema: Dict, cohorte_id: int) -> 
 
     cursor = conn.cursor()
 
-    # Resolver nombres de columnas
+    # Resolver nombres de columnas con fallbacks seguros
     col_est_id = 'id'
     col_est_nombre = get_column_name(schema, 'Estudiantes', 'Nombre') or 'Nombre'
     col_est_apellido = get_column_name(schema, 'Estudiantes', 'Apellido') or 'Apellido'
@@ -527,7 +538,7 @@ def get_matrix_data(conn: sqlite3.Connection, schema: Dict, cohorte_id: int) -> 
     col_act_id = 'id'
     col_act_nombre = get_column_name(schema, 'Actividades', 'Nombre') or 'Nombre'
     col_act_orden = get_column_name(schema, 'Actividades', 'Orden') or 'Orden'
-    col_act_fecha_limite = get_column_name(schema, 'Actividades', 'Fecha Límite') or 'Fecha'
+    col_act_fecha_limite = get_column_name(schema, 'Actividades', 'Fecha Límite') or 'Fecha_limite'
     col_act_peso = get_column_name(schema, 'Actividades', 'Peso') or 'Peso'
     col_act_cohorte = get_column_name(schema, 'Actividades', 'Cohorte') or 'nc_fk_cohorte_id'
 

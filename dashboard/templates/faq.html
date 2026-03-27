@@ -208,14 +208,21 @@
             <h2>👥 Gestión de Cohortes</h2>
 
             <div class="faq-item">
+                <div class="faq-question">¿Cómo inicializo las tablas de la base de datos?</div>
+                <div class="faq-answer">
+                    La forma más rápida es usar el script <code>python create_noco_tables.py</code> incluido en el repositorio. Solicitará tu credencial de NocoDB y construirá todas las tablas, columnas y relaciones automáticamente por la API.
+                </div>
+            </div>
+
+            <div class="faq-item">
                 <div class="faq-question">¿Cómo creo una nueva cohorte?</div>
                 <div class="faq-answer">
-                    1. Accede a NocoDB (<code>http://localhost:8080</code>)<br>
+                    1. Accede a tu panel administrativo de NocoDB<br>
                     2. Ve a la tabla <strong>Cohortes</strong><br>
                     3. Haz clic en <strong>+ Nuevo</strong><br>
-                    4. Completa los campos: Nombre, Curso, Cuatrimestre, Año, Fechas<br>
-                    5. Marca <strong>Activa</strong> para que aparezca en el dashboard
-                    <div class="tip">Usa nombres descriptivos como "2026-Q1-Redes" para identificar fácilmente cada cohorte.</div>
+                    4. Completa el Nombre de la cohorte<br>
+                    5. Marca la casilla <strong>Activa</strong> para que aparezca en el dashboard
+                    <div class="tip">Usa nombres descriptivos como "pln-1c-2026" para identificar fácilmente cada cohorte.</div>
                 </div>
             </div>
 
@@ -367,37 +374,31 @@
                 <div class="faq-answer">
                     Verifica que:<br>
                     1. Exista al menos una cohorte activa<br>
-                    2. La cohorte tenga estudiantes asignados<br>
-                    3. La cohorte tenga actividades creadas<br>
-                    4. La variable de entorno <code>NOCODB_DB_PATH</code> apunte a la base correcta
+                    2. La cohorte tenga alumnos y actividades cargadas<br>
+                    3. La variable de entorno <code>NOCODB_DB_PATH</code> apunte a la base correcta en el volumen Docker (<code>/data/noco.db</code>)
                 </div>
             </div>
 
             <div class="faq-item">
-                <div class="faq-question">Error "database is locked"</div>
+                <div class="faq-question">Error "database is locked" (SQLite)</div>
                 <div class="faq-answer">
-                    Esto ocurre cuando NocoDB y el Dashboard intentan escribir/leer simultáneamente. El sistema ya tiene timeout de 20 segundos. Si persiste:<br>
-                    1. Reinicia el contenedor de NocoDB: <code>docker restart nocodb</code><br>
-                    2. Espera 30 segundos antes de acceder al dashboard
+                    Esto ocurría en despliegues antiguos. El sistema actual accede a NocoDB en modo estricto de <strong>Solo Lectura (Read-Only)</strong> con un timeout de 20s, por ende ya no deberían ocurrir bloqueos de concurrencia en producción. Si persisten problemas, revisa que el contenedor Docker no esté saturando el disco.
                 </div>
             </div>
 
             <div class="faq-item">
-                <div class="faq-question">Los estudiantes no pueden ver el formulario</div>
+                <div class="faq-question">El Dashboard no computa los datos (Relaciones M2M corruptas)</div>
                 <div class="faq-answer">
-                    1. En NocoDB, ve a la tabla <strong>Entregas</strong><br>
-                    2. Crea una <strong>Form View</strong><br>
-                    3. Configura los campos visibles: Estudiante, Actividad, URL Entrega, Archivo<br>
-                    4. Comparte la URL pública del formulario con los estudiantes
+                    Si al configurar NocoDB marcaste accidentalmente "Permitir enlazar múltiples registros" en las claves foráneas (ej: de Estudiante a Cohorte), NocoDB genera tablas intermedias "Many-to-Many". El Dashboard trae incorporada una función de <strong>Auto-Fix</strong> que intentará detectar y reparar el esquema SQLite en vivo cuando inicia. Si el error persiste, asegúrate de desmarcar manualmente el checkbox en la vista web de NocoDB.
                 </div>
             </div>
 
             <div class="faq-item">
-                <div class="faq-question">Las columnas no aparecen correctamente en el dashboard</div>
+                <div class="faq-question">Las nuevas columnas no aparecen en el dashboard</div>
                 <div class="faq-answer">
-                    El dashboard usa <strong>descubrimiento de schema</strong> automático. Si los nombres de columna cambiaron en NocoDB:<br>
-                    1. Reinicia el contenedor del dashboard<br>
-                    2. El sistema releerá los metadatos al iniciar
+                    El dashboard usa un <strong>descubrimiento dinámico de esquema</strong> (leyendo los metadatos internos <code>nc_models_v2</code> y <code>nc_columns_v2</code>). Si cambias los nombres de tus columnas o tablas en producción:<br>
+                    1. Reinicia el contenedor del dashboard: <code>docker compose restart dashboard</code><br>
+                    2. El sistema mapeará el nuevo SQL al iniciar.
                 </div>
             </div>
         </div>

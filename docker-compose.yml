@@ -41,6 +41,8 @@ services:
     environment:
       - NOCODB_DB_PATH=/data/noco.db
       - COHORTE_FILTRAR_ACTIVAS=${COHORTE_FILTRAR_ACTIVAS:-true}
+      - ADMIN_USER=${ADMIN_USER}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     ports:
       - "5000:5000"
     # --- Traefik (descomentar en producción) ---

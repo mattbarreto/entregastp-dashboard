@@ -8,8 +8,9 @@ import sqlite3
 import logging
 from datetime import datetime
 from typing import Optional, Dict, List, Any, Tuple
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, Response
 import io
+from functools import wraps
 
 # Configuración de logs
 logging.basicConfig(level=logging.INFO)
@@ -20,6 +21,30 @@ app = Flask(__name__)
 # === CONFIGURACIÓN ===
 DB_PATH = os.environ.get('NOCODB_DB_PATH', '/data/noco.db')
 FILTRAR_ACTIVAS = os.environ.get('COHORTE_FILTRAR_ACTIVAS', 'true').lower() == 'true'
+
+# Credenciales de administrador (docente) para rutas privadas
+ADMIN_USER = os.environ.get('ADMIN_USER', 'docente')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'entregas2026')
+
+# === AUTENTICACIÓN ===
+def check_auth(username, password):
+    """Verifica si las credenciales coinciden con las del entorno."""
+    return username == ADMIN_USER and password == ADMIN_PASSWORD
+
+def authenticate():
+    """Envía un 401 que solicita al navegador mostrar la ventana de login."""
+    return Response(
+    'No autorizado. Ingrese sus credenciales de docente.\n', 401,
+    {'WWW-Authenticate': 'Basic realm="Acceso Docentes"'})
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+    return decorated
 
 # Nombres visibles de tablas que esperamos encontrar
 TABLE_TITLES = {
@@ -562,6 +587,7 @@ def index():
 
 
 @app.route('/resumen')
+@requires_auth
 def resumen():
     conn = get_db()
     try:
@@ -672,6 +698,7 @@ def api_estudiante(estudiante_id):
 
 
 @app.route('/api/exportar-excel')
+@requires_auth
 def exportar_excel():
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment

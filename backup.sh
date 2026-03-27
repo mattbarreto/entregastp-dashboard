@@ -43,9 +43,16 @@ mkdir -p "$BACKUP_DIR"
 log "Iniciando backup del Sistema de Seguimiento de Entregas v1.0.0"
 log "Directorio de backup: $BACKUP_DIR"
 
-# Verificar que existe el directorio de datos
-if [ ! -d "$PROJECT_DIR/nocodb-data" ]; then
-    error "No se encontro el directorio nocodb-data en $PROJECT_DIR"
+# Verificar que existe el volumen nombrado de Docker
+if ! docker volume inspect entregastp-dashboard_noco_data >/dev/null 2>&1; then
+    # Intentar con el nombre por default de 'dashboard_noco_data'
+    if docker volume inspect dashboard_noco_data >/dev/null 2>&1; then
+        VOLUME_NAME="dashboard_noco_data"
+    else
+        error "No se encontró el volumen de NocoDB (entregastp-dashboard_noco_data o dashboard_noco_data)"
+    fi
+else
+    VOLUME_NAME="entregastp-dashboard_noco_data"
 fi
 
 # Nombre del archivo de backup
@@ -54,14 +61,17 @@ BACKUP_PATH="$BACKUP_DIR/$BACKUP_FILE"
 
 log "Creando backup: $BACKUP_FILE"
 
-# Crear tarball excluyendo archivos innecesarios
-tar -czf "$BACKUP_PATH" \
+# Crear tarball excluyendo archivos innecesarios usando un contenedor temporal
+# para leer directamente del volumen nombrado de Docker
+docker run --rm \
+    -v "$VOLUME_NAME":/data:ro \
+    -v "$BACKUP_DIR":/backup \
+    alpine tar -czf "/backup/$BACKUP_FILE" \
     --exclude='*.log' \
     --exclude='*.tmp' \
     --exclude='.cache' \
     --exclude='nc/uploads/tmp' \
-    -C "$PROJECT_DIR" \
-    nocodb-data/
+    -C /data .
 
 # Verificar que se creo correctamente
 if [ -f "$BACKUP_PATH" ]; then

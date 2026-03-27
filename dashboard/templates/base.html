@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Seguimiento de Entregas{% endblock %}</title>
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Solo lo que Tailwind no puede expresar con utilities */
+
+        /* Colores de estado dinámicos (asignados desde Jinja2/JS) */
+        .status-verde    { background-color: #22c55e; color: white; }
+        .status-amarillo { background-color: #eab308; color: #1f2937; }
+        .status-rojo     { background-color: #ef4444; color: white; }
+        .status-gris     { background-color: #d1d5db; color: #374151; }
+
+        /* Tooltip via pseudo-elemento (no expresable con utilities) */
+        .tooltip { position: relative; }
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2937;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            margin-bottom: 4px;
+        }
+        .tooltip:hover::after { opacity: 1; }
+        @media (prefers-reduced-motion: reduce) {
+            .tooltip::after { transition: none; }
+        }
+
+        /* writing-mode no tiene utility en Tailwind */
+        .activity-header-cell {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            min-width: 48px;
+            max-width: 48px;
+            height: 140px;
+            vertical-align: bottom;
+            text-align: left;
+        }
+        @media (max-width: 768px) {
+            .activity-header-cell {
+                height: 80px;
+                min-width: 32px;
+                max-width: 32px;
+            }
+        }
+
+        /* Clase reutilizable para cabeceras de tabla de datos */
+        .th-label {
+            background-color: #f1f5f9;
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #6b7280;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid #e5e7eb;
+        }
+    </style>
+    {% block extra_styles %}{% endblock %}
+</head>
+<body class="bg-gray-50 text-gray-800 leading-relaxed min-h-screen flex flex-col">
+
+    <main class="flex-1">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-slate-800 text-white/60 py-4 text-center text-xs">
+        <div class="max-w-screen-xl mx-auto flex justify-center items-center gap-4 flex-wrap">
+            <span>v1.0.0</span>
+            <span>|</span>
+            <span>Desarrollado por <a href="https://www.matiasbarreto.com" target="_blank" class="text-blue-400 hover:underline">Matías Barreto</a></span>
+            <span>|</span>
+            <a href="/faq" class="text-blue-400 hover:underline">¿Necesitas ayuda?</a>
+        </div>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

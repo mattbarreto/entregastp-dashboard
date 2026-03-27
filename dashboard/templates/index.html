@@ -1,694 +1,284 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seguimiento de Entregas</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Variables de color */
-        :root {
-            --bg-primary: #f8f9fa;
-            --bg-card: #ffffff;
-            --bg-header: #1e293b;
-            --text-primary: #212529;
-            --text-secondary: #6c757d;
-            --text-on-dark: #ffffff;
-            --border-color: #dee2e6;
-            
-            /* Colores de estado */
-            --color-verde: #22c55e;
-            --color-amarillo: #eab308;
-            --color-rojo: #ef4444;
-            --color-gris: #d1d5db;
+{% extends "base.html" %}
+
+{% block title %}Seguimiento de Entregas{% endblock %}
+
+{% block extra_styles %}
+<style>
+    /* Panel lateral: transición de posición no expresable con utilities estáticas */
+    .side-panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 380px;
+        height: 100vh;
+        background: white;
+        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+        /* translate en lugar de right: compositor-friendly */
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+    .side-panel.open { transform: translateX(0); }
+    @media (prefers-reduced-motion: reduce) {
+        .side-panel { transition: none; }
+    }
+
+    /* Sticky table headers con z-index combinados */
+    .matrix-table th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .matrix-table th.corner {
+        left: 0;
+        z-index: 20;
+    }
+    .matrix-table td.student-cell {
+        position: sticky;
+        left: 0;
+        z-index: 5;
+    }
+
+    /* Hover en celda de estado */
+    .status-cell:hover {
+        transform: scale(1.1);
+        z-index: 1;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    @media (max-width: 768px) {
+        .status-cell {
+            width: 32px !important;
+            height: 32px !important;
+            min-width: 32px !important;
+            min-height: 32px !important;
         }
+    }
+</style>
+{% endblock %}
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+{% block content %}
+<div class="w-full p-4">
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.5;
-            min-height: 100vh;
-        }
-
-        .dashboard-container {
-            max-width: 100%;
-            margin: 0 auto;
-            padding: 16px;
-        }
-
-        /* Header */
-        .dashboard-header {
-            background: var(--bg-header);
-            color: var(--text-on-dark);
-            padding: 20px 24px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .dashboard-header h1 {
-            font-size: 20px;
-            font-weight: 600;
-        }
-
-        /* Filtros */
-        .filters {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .filter-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .filter-group label {
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.8);
-        }
-
-        .filter-group select {
-            padding: 8px 12px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text-on-dark);
-            font-size: 14px;
-            cursor: pointer;
-        }
-
-        .filter-group select option {
-            background: var(--bg-header);
-            color: var(--text-on-dark);
-        }
-
-        /* Contenedor de tabla con scroll */
-        .table-container {
-            background: var(--bg-card);
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-            overflow: auto;
-            max-height: 80vh;
-        }
-
-        /* Tabla principal */
-        .matrix-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            font-size: 13px;
-            min-width: 100%;
-        }
-
-        /* Headers */
-        .matrix-table th {
-            background: #f1f5f9;
-            border-bottom: 2px solid var(--border-color);
-            padding: 12px 8px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        /* Header esquina (sticky en ambas direcciones) */
-        .matrix-table th.corner {
-            background: #e2e8f0;
-            position: sticky;
-            left: 0;
-            z-index: 20;
-        }
-
-        /* Header de actividades */
-        .matrix-table th.activity-header {
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            transform: rotate(180deg);
-            min-width: 48px;
-            max-width: 48px;
-            height: 140px;
-            vertical-align: bottom;
-            text-align: left;
-            padding: 12px 6px;
-            font-size: 11px;
-        }
-
-        /* Celdas */
-        .matrix-table td {
-            border-bottom: 1px solid #f0f0f0;
-            border-right: 1px solid #f0f0f0;
-            padding: 0;
-            text-align: center;
-        }
-
-        /* Columna de estudiante (sticky left) - compacta */
-        .matrix-table td.student-cell {
-            background: #ffffff;
-            position: sticky;
-            left: 0;
-            z-index: 5;
-            padding: 8px 10px;
-            text-align: left;
-            font-weight: 500;
-            border-right: 1px solid var(--border-color);
-            min-width: 140px;
-            max-width: 160px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            cursor: pointer;
-            transition: background-color 0.15s;
-        }
-
-        .matrix-table td.student-cell:hover {
-            background-color: #f8fafc;
-        }
-
-        .matrix-table td.student-cell .student-name {
-            font-weight: 600;
-            color: var(--text-primary);
-            font-size: 12px;
-        }
-
-        /* Panel lateral */
-        .side-panel {
-            position: fixed;
-            top: 0;
-            right: -400px;
-            width: 380px;
-            height: 100vh;
-            background: white;
-            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
-            z-index: 1000;
-            transition: right 0.3s ease;
-            overflow-y: auto;
-        }
-
-        .side-panel.open {
-            right: 0;
-        }
-
-        .side-panel-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.4);
-            z-index: 999;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
-        }
-
-        .side-panel-overlay.open {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .side-panel-header {
-            background: var(--bg-header);
-            color: white;
-            padding: 20px;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        .side-panel-close {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-            transition: background 0.15s;
-        }
-
-        .side-panel-close:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .side-panel-content {
-            padding: 20px;
-        }
-
-        .student-detail-section {
-            margin-bottom: 24px;
-        }
-
-        .student-detail-section h3 {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-
-        .student-detail-value {
-            font-size: 14px;
-            color: var(--text-primary);
-            word-break: break-word;
-        }
-
-        .student-detail-value a {
-            color: #3b82f6;
-            text-decoration: none;
-        }
-
-        .student-detail-value a:hover {
-            text-decoration: underline;
-        }
-
-        .entregas-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .entrega-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            background: #f8fafc;
-            border-radius: 6px;
-            border-left: 3px solid var(--color-gris);
-        }
-
-        .entrega-item.entregado {
-            border-left-color: var(--color-verde);
-        }
-
-        .entrega-item.tarde {
-            border-left-color: var(--color-amarillo);
-        }
-
-        .entrega-item.no-entregado {
-            border-left-color: var(--color-rojo);
-        }
-
-        .entrega-status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
-        .entrega-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .entrega-actividad {
-            font-weight: 500;
-            font-size: 13px;
-            color: var(--text-primary);
-        }
-
-        .entrega-fecha {
-            font-size: 11px;
-            color: var(--text-secondary);
-        }
-
-        /* Celdas de estado */
-        .matrix-table td.status-cell {
-            width: 40px;
-            height: 40px;
-            min-width: 40px;
-            min-height: 40px;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-
-        .matrix-table td.status-cell:hover {
-            transform: scale(1.1);
-            z-index: 1;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        }
-
-        /* Estados de color */
-        .status-verde {
-            background-color: var(--color-verde);
-            color: white;
-        }
-
-        .status-amarillo {
-            background-color: var(--color-amarillo);
-            color: #1f2937;
-        }
-
-        .status-rojo {
-            background-color: var(--color-rojo);
-            color: white;
-        }
-
-        .status-gris {
-            background-color: var(--color-gris);
-            color: #374151;
-        }
-
-        /* Tooltip */
-        .tooltip {
-            position: relative;
-        }
-
-        .tooltip::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #1f2937;
-            color: white;
-            padding: 6px 10px;
-            border-radius: 4px;
-            font-size: 11px;
-            white-space: nowrap;
-            z-index: 100;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s;
-            margin-bottom: 4px;
-        }
-
-        .tooltip:hover::after {
-            opacity: 1;
-        }
-
-        /* Leyenda */
-        .legend {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            margin-top: 16px;
-            padding: 12px;
-            background: var(--bg-card);
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-            flex-wrap: wrap;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-        }
-
-        .legend-color {
-            width: 16px;
-            height: 16px;
-            border-radius: 4px;
-        }
-
-        /* Estado vacío */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-secondary);
-        }
-
-        .empty-state h3 {
-            font-size: 18px;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .dashboard-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .matrix-table th.activity-header {
-                height: 80px;
-                min-width: 32px;
-                max-width: 32px;
-            }
-
-            .matrix-table td.status-cell {
-                width: 32px;
-                height: 32px;
-                min-width: 32px;
-                min-height: 32px;
-            }
-
-            .legend {
-                flex-direction: column;
-                gap: 10px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="dashboard-container">
-        <!-- Header -->
-        <header class="dashboard-header">
-            <h1>Seguimiento de Entregas</h1>
-            <form class="filters" method="get" action="/">
-                <div class="filter-group">
-                    <label for="cohorte">Cohorte:</label>
-                    <select name="cohorte" id="cohorte" onchange="this.form.submit()">
-                        {% for cohorte in cohortes %}
-                        <option value="{{ cohorte.id }}" {% if selected_cohorte and selected_cohorte.id == cohorte.id %}selected{% endif %}>
-                            {{ cohorte.nombre }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </form>
-        </header>
-
-        <!-- Banner de advertencia de esquema -->
-        {% if schema_warnings %}
-        <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 14px 20px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 10px;">
-            <span style="font-size: 20px;">⚠️</span>
-            <div>
-                <strong style="color: #92400e; font-size: 14px;">Problemas detectados en el esquema de NocoDB</strong>
-                <ul style="margin: 6px 0 0 16px; font-size: 13px; color: #78350f;">
-                    {% for warning in schema_warnings %}
-                    <li>{{ warning }}</li>
+    <header class="bg-slate-800 text-white px-6 py-5 rounded-lg mb-4 flex justify-between items-center flex-wrap gap-3">
+        <h1 class="text-xl font-semibold">Seguimiento de Entregas</h1>
+        <form class="flex gap-3 items-center flex-wrap" method="get" action="/">
+            <div class="flex items-center gap-2">
+                <label for="cohorte" class="text-sm text-white/80">Cohorte:</label>
+                <select name="cohorte" id="cohorte"
+                    onchange="this.form.submit()"
+                    class="px-3 py-2 border border-white/20 rounded-md bg-white/10 text-white text-sm cursor-pointer">
+                    {% for cohorte in cohortes %}
+                    <option value="{{ cohorte.id }}"
+                        style="background: #1e293b; color: white;"
+                        {% if selected_cohorte and selected_cohorte.id == cohorte.id %}selected{% endif %}>
+                        {{ cohorte.nombre }}
+                    </option>
                     {% endfor %}
-                </ul>
+                </select>
             </div>
-        </div>
-        {% elif schema_fixed %}
-        <div style="background: #d1fae5; border: 1px solid #10b981; border-radius: 8px; padding: 14px 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 20px;">✅</span>
-            <div>
-                <strong style="color: #065f46; font-size: 14px;">Auto-fix aplicado exitosamente</strong>
-                <p style="margin: 2px 0 0; font-size: 13px; color: #047857;">Se detectaron relaciones M2M y se migraron a FK directas. Verificá los datos en el dashboard.</p>
-            </div>
-        </div>
-        {% endif %}
+        </form>
+    </header>
 
-        <!-- Tabla matriz -->
-        {% if students and activities %}
-        <div class="table-container">
-            <table class="matrix-table">
-                <thead>
-                    <tr>
-                        <th class="corner">Estudiante</th>
-                        {% for activity in activities %}
-                        <th class="activity-header" title="{{ activity.nombre }}">
-                            {{ activity.nombre }}
-                        </th>
-                        {% endfor %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for student in students %}
-                    <tr>
-                        <td class="student-cell" onclick="openStudentPanel({{ student.id }})">
-                            <div class="student-name">{{ student.apellido }}, {{ student.nombre }}</div>
-                        </td>
-                        {% for activity in activities %}
-                        {% set cell = cells.get((student.id, activity.id)) %}
-                        {% if cell %}
-                        <td class="status-cell tooltip status-{{ 'verde' if cell.color == '#22c55e' else 'amarillo' if cell.color == '#eab308' else 'rojo' if cell.color == '#ef4444' else 'gris' }}"
-                            data-tooltip="{{ cell.tooltip }}"
-                            {% if cell.url %}onclick="window.open('{{ cell.url }}', '_blank')"{% endif %}>
-                            {{ cell.label }}
-                        </td>
-                        {% else %}
-                        <td class="status-cell status-gris">−</td>
-                        {% endif %}
-                        {% endfor %}
-                    </tr>
+    {% if schema_warnings %}
+    <div class="bg-amber-50 border border-amber-400 rounded-lg px-5 py-3.5 mb-4 flex items-start gap-2.5">
+        <span class="text-xl">⚠️</span>
+        <div>
+            <strong class="text-amber-800 text-sm">Problemas detectados en el esquema de NocoDB</strong>
+            <ul class="mt-1.5 ml-4 text-xs text-amber-900 list-disc">
+                {% for warning in schema_warnings %}
+                <li>{{ warning }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% elif schema_fixed %}
+    <div class="bg-emerald-50 border border-emerald-500 rounded-lg px-5 py-3.5 mb-4 flex items-center gap-2.5">
+        <span class="text-xl">✅</span>
+        <div>
+            <strong class="text-emerald-800 text-sm">Auto-fix aplicado exitosamente</strong>
+            <p class="mt-0.5 text-xs text-emerald-700">Se detectaron relaciones M2M y se migraron a FK directas. Verificá los datos en el dashboard.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if students and activities %}
+    <div class="bg-white rounded-lg shadow-sm overflow-auto max-h-[80vh]">
+        <table class="matrix-table w-full border-separate border-spacing-0 text-xs" style="min-width: 100%;">
+            <thead>
+                <tr>
+                    <th class="corner bg-slate-200 border-b-2 border-gray-300 px-2 py-3 font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap text-left">
+                        Estudiante
+                    </th>
+                    {% for activity in activities %}
+                    <th class="activity-header-cell bg-slate-100 border-b-2 border-gray-300 px-1.5 py-3 font-semibold text-gray-500 uppercase tracking-wide"
+                        title="{{ activity.nombre }}">
+                        {{ activity.nombre }}
+                    </th>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Leyenda -->
-        <div class="legend">
-            <div class="legend-item">
-                <div class="legend-color" style="background-color: #22c55e;"></div>
-                <span>Entregado / Corregido</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background-color: #eab308;"></div>
-                <span>Entregado tarde / Rehacer</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background-color: #ef4444;"></div>
-                <span>No entregado (vencido)</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background-color: #d1d5db;"></div>
-                <span>Pendiente</span>
-            </div>
-        </div>
-        {% else %}
-        <!-- Estado vacío -->
-        <div class="empty-state">
-            <h3>No hay datos para mostrar</h3>
-            <p>Selecciona una cohorte o verifica que existan estudiantes y actividades.</p>
-        </div>
-        {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td class="student-cell bg-white px-2.5 py-2 text-left font-medium border-b border-r border-gray-200 min-w-[140px] max-w-[160px] whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer transition-colors hover:bg-slate-50"
+                        onclick="openStudentPanel({{ student.id }})">
+                        <div class="font-semibold text-gray-800 text-xs">{{ student.apellido }}, {{ student.nombre }}</div>
+                    </td>
+                    {% for activity in activities %}
+                    {% set cell = cells.get((student.id, activity.id)) %}
+                    {% if cell %}
+                    <td class="status-cell tooltip border-b border-r border-gray-100 text-center cursor-pointer transition-transform w-10 h-10 min-w-[40px] min-h-[40px] status-{{ 'verde' if cell.color == '#22c55e' else 'amarillo' if cell.color == '#eab308' else 'rojo' if cell.color == '#ef4444' else 'gris' }}"
+                        data-tooltip="{{ cell.tooltip }}"
+                        {% if cell.url %}onclick="window.open('{{ cell.url }}', '_blank')"{% endif %}>
+                        {{ cell.label }}
+                    </td>
+                    {% else %}
+                    <td class="status-cell border-b border-r border-gray-100 text-center w-10 h-10 min-w-[40px] min-h-[40px] status-gris">−</td>
+                    {% endif %}
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
-    <!-- Overlay del panel lateral -->
-    <div class="side-panel-overlay" id="panelOverlay" onclick="closeStudentPanel()"></div>
-
-    <!-- Panel lateral -->
-    <div class="side-panel" id="studentPanel">
-        <div class="side-panel-header">
-            <h2 id="panelStudentName">Estudiante</h2>
-            <button class="side-panel-close" onclick="closeStudentPanel()">&times;</button>
+    <div class="flex gap-5 justify-center mt-4 p-3 bg-white rounded-lg shadow-sm flex-wrap">
+        <div class="flex items-center gap-2 text-sm">
+            <div class="w-4 h-4 rounded bg-green-500"></div>
+            <span>Entregado / Corregido</span>
         </div>
-        <div class="side-panel-content">
-            <div class="student-detail-section">
-                <h3>Email</h3>
-                <div class="student-detail-value" id="panelStudentEmail">-</div>
-            </div>
-            <div class="student-detail-section">
-                <h3>GitHub</h3>
-                <div class="student-detail-value">
-                    <a id="panelStudentGithub" href="#" target="_blank">-</a>
-                </div>
-            </div>
-            <div class="student-detail-section">
-                <h3>Entregas</h3>
-                <div class="entregas-list" id="panelEntregasList">
-                    <!-- Se llena dinámicamente -->
-                </div>
-            </div>
+        <div class="flex items-center gap-2 text-sm">
+            <div class="w-4 h-4 rounded bg-yellow-400"></div>
+            <span>Entregado tarde / Rehacer</span>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+            <div class="w-4 h-4 rounded bg-red-500"></div>
+            <span>No entregado (vencido)</span>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+            <div class="w-4 h-4 rounded bg-gray-300"></div>
+            <span>Pendiente</span>
         </div>
     </div>
 
-    <script>
-        // Datos de estudiantes pasados desde Flask
-        const studentsData = {{ students_data | tojson }};
-        const entregasPorEstudiante = {{ entregas_por_estudiante | tojson }};
+    {% else %}
+    <div class="text-center py-16 px-5 text-gray-500">
+        <h3 class="text-lg mb-2 text-gray-700">No hay datos para mostrar</h3>
+        <p>Selecciona una cohorte o verifica que existan estudiantes y actividades.</p>
+    </div>
+    {% endif %}
 
-        function openStudentPanel(studentId) {
-            const student = studentsData[studentId];
-            if (!student) return;
+</div>
 
-            // Llenar datos del estudiante
-            document.getElementById('panelStudentName').textContent =
-                student.apellido + ', ' + student.nombre;
-            document.getElementById('panelStudentEmail').textContent =
-                student.email || 'No disponible';
+<div class="fixed inset-0 bg-black/40 z-[999] opacity-0 invisible transition-[opacity,visibility] duration-300"
+     id="panelOverlay"
+     role="presentation"
+     onclick="closeStudentPanel()"></div>
 
-            const githubLink = document.getElementById('panelStudentGithub');
-            if (student.github) {
-                githubLink.href = student.github;
-                githubLink.textContent = student.github.replace('https://github.com/', '@');
-            } else {
-                githubLink.href = '#';
-                githubLink.textContent = 'No disponible';
-            }
-
-            // Llenar lista de entregas
-            const entregasList = document.getElementById('panelEntregasList');
-            entregasList.innerHTML = '';
-
-            const entregas = entregasPorEstudiante[studentId] || [];
-            if (entregas.length === 0) {
-                entregasList.innerHTML = '<p style="color: var(--text-secondary); font-size: 13px;">Sin entregas registradas</p>';
-            } else {
-                entregas.forEach(entrega => {
-                    const item = document.createElement('div');
-                    let statusClass = 'no-entregado';
-                    if (entrega.estado === 'Entregado' || entrega.estado === 'Corregido') {
-                        statusClass = 'entregado';
-                    } else if (entrega.estado === 'Entregado tarde' || entrega.estado === 'Rehacer') {
-                        statusClass = 'tarde';
-                    }
-
-                    item.className = 'entrega-item ' + statusClass;
-                    item.innerHTML = `
-                        <div class="entrega-status-dot" style="background-color: ${entrega.color};"></div>
-                        <div class="entrega-info">
-                            <div class="entrega-actividad">${entrega.actividad}</div>
-                            <div class="entrega-fecha">${entrega.estado}${entrega.fecha ? ' • ' + entrega.fecha : ''}</div>
-                        </div>
-                    `;
-                    entregasList.appendChild(item);
-                });
-            }
-
-            // Abrir panel
-            document.getElementById('studentPanel').classList.add('open');
-            document.getElementById('panelOverlay').classList.add('open');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeStudentPanel() {
-            document.getElementById('studentPanel').classList.remove('open');
-            document.getElementById('panelOverlay').classList.remove('open');
-            document.body.style.overflow = '';
-        }
-
-        // Cerrar con tecla Escape
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeStudentPanel();
-            }
-        });
-    </script>
-
-    <!-- Footer -->
-    <footer style="background: #1e293b; color: rgba(255,255,255,0.6); padding: 16px; text-align: center; font-size: 12px; margin-top: 24px;">
-        <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: center; align-items: center; gap: 16px; flex-wrap: wrap;">
-            <span>v1.0.0</span>
-            <span>|</span>
-            <span>Desarrollado por <a href="https://www.matiasbarreto.com" target="_blank" style="color: #60a5fa; text-decoration: none;">Matías Barreto</a></span>
-            <span>|</span>
-            <a href="/faq" style="color: #60a5fa; text-decoration: none;">¿Necesitas ayuda?</a>
+<div class="side-panel" id="studentPanel">
+    <div class="bg-slate-800 text-white p-5 sticky top-0 z-10 relative">
+        <h2 class="text-base font-semibold" id="panelStudentName">Estudiante</h2>
+        <button onclick="closeStudentPanel()"
+            aria-label="Cerrar panel"
+            class="absolute top-3.5 right-3.5 bg-transparent border-none text-white text-2xl cursor-pointer w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none">
+            &times;
+        </button>
+    </div>
+    <div class="p-5">
+        <div class="mb-6">
+            <h3 class="text-xs uppercase tracking-wide text-gray-500 mb-2 font-semibold">Email</h3>
+            <div class="text-sm text-gray-800 break-words" id="panelStudentEmail">-</div>
         </div>
-    </footer>
-</body>
-</html>
+        <div class="mb-6">
+            <h3 class="text-xs uppercase tracking-wide text-gray-500 mb-2 font-semibold">GitHub</h3>
+            <div class="text-sm">
+                <a id="panelStudentGithub" href="#" target="_blank" class="text-blue-500 hover:underline">-</a>
+            </div>
+        </div>
+        <div class="mb-6">
+            <h3 class="text-xs uppercase tracking-wide text-gray-500 mb-2 font-semibold">Entregas</h3>
+            <div class="flex flex-col gap-2" id="panelEntregasList"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const studentsData = {{ students_data | tojson }};
+    const entregasPorEstudiante = {{ entregas_por_estudiante | tojson }};
+
+    const ESTADO_COLOR = {
+        'Entregado':       '#22c55e',
+        'Corregido':       '#22c55e',
+        'Entregado tarde': '#eab308',
+        'Rehacer':         '#eab308',
+    };
+
+    function handleEscapeKey(e) {
+        if (e.key === 'Escape') closeStudentPanel();
+    }
+
+    function openStudentPanel(studentId) {
+        const student = studentsData[studentId];
+        if (!student) return;
+
+        document.getElementById('panelStudentName').textContent =
+            student.apellido + ', ' + student.nombre;
+        document.getElementById('panelStudentEmail').textContent =
+            student.email || 'No disponible';
+
+        const githubLink = document.getElementById('panelStudentGithub');
+        if (student.github) {
+            githubLink.href = student.github;
+            githubLink.textContent = student.github.replace('https://github.com/', '@');
+        } else {
+            githubLink.href = '#';
+            githubLink.textContent = 'No disponible';
+        }
+
+        const entregasList = document.getElementById('panelEntregasList');
+        entregasList.innerHTML = '';
+
+        const entregas = entregasPorEstudiante[studentId] || [];
+        if (entregas.length === 0) {
+            entregasList.innerHTML = '<p class="text-gray-500 text-sm">Sin entregas registradas</p>';
+        } else {
+            entregas.forEach(entrega => {
+                const borderColor = ESTADO_COLOR[entrega.estado] || '#ef4444';
+                const item = document.createElement('div');
+                item.className = 'flex items-center gap-2.5 px-3 py-2.5 bg-slate-50 rounded-md border-l-[3px]';
+                item.style.borderLeftColor = borderColor;
+                item.innerHTML = `
+                    <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${entrega.color};"></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-medium text-sm text-gray-800">${entrega.actividad}</div>
+                        <div class="text-xs text-gray-500">${entrega.estado}${entrega.fecha ? ' • ' + entrega.fecha : ''}</div>
+                    </div>
+                `;
+                entregasList.appendChild(item);
+            });
+        }
+
+        document.getElementById('studentPanel').classList.add('open');
+        const overlay = document.getElementById('panelOverlay');
+        overlay.classList.remove('opacity-0', 'invisible');
+        overlay.classList.add('opacity-100', 'visible');
+        document.body.style.overflow = 'hidden';
+        // Registrar listener solo cuando el panel está abierto para evitar acumulación
+        document.addEventListener('keydown', handleEscapeKey);
+    }
+
+    function closeStudentPanel() {
+        document.getElementById('studentPanel').classList.remove('open');
+        const overlay = document.getElementById('panelOverlay');
+        overlay.classList.add('opacity-0', 'invisible');
+        overlay.classList.remove('opacity-100', 'visible');
+        document.body.style.overflow = '';
+        document.removeEventListener('keydown', handleEscapeKey);
+    }
+</script>
+{% endblock %}

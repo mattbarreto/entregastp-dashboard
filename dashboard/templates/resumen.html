@@ -1,364 +1,147 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resumen de Cumplimiento - Docentes</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        :root {
-            --bg-primary: #f8f9fa;
-            --bg-card: #ffffff;
-            --bg-header: #1e293b;
-            --text-primary: #212529;
-            --text-secondary: #6c757d;
-            --text-on-dark: #ffffff;
-            --border-color: #dee2e6;
-            --color-verde: #22c55e;
-            --color-amarillo: #eab308;
-            --color-rojo: #ef4444;
-            --color-gris: #d1d5db;
-            --color-azul: #3b82f6;
-        }
+{% extends "base.html" %}
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+{% block title %}Resumen de Cumplimiento - Docentes{% endblock %}
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.5;
-            min-height: 100vh;
-        }
+{% block content %}
+<div class="max-w-screen-xl mx-auto p-5">
 
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-
-        .header {
-            background: var(--bg-header);
-            color: var(--text-on-dark);
-            padding: 24px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-
-        .header h1 { font-size: 24px; font-weight: 600; }
-
-        .header-actions {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            border: none;
-            transition: all 0.15s;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: var(--color-verde);
-            color: white;
-        }
-
-        .btn-primary:hover { background: #16a34a; }
-
-        .btn-secondary {
-            background: rgba(255,255,255,0.1);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .btn-secondary:hover { background: rgba(255,255,255,0.2); }
-
-        .filters {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        .filters select {
-            padding: 10px 16px;
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.2);
-            background: rgba(255,255,255,0.1);
-            color: white;
-            font-size: 14px;
-            cursor: pointer;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .stat-card {
-            background: var(--bg-card);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        }
-
-        .stat-label {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-        }
-
-        .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-
-        .table-container {
-            background: var(--bg-card);
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-            overflow: hidden;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-
-        .data-table th {
-            background: #f1f5f9;
-            padding: 14px 16px;
-            text-align: left;
-            font-weight: 600;
-            color: var(--text-secondary);
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 2px solid var(--border-color);
-        }
-
-        .data-table td {
-            padding: 14px 16px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .data-table tr:hover { background: #f8fafc; }
-
-        .student-name {
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .student-email {
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .badge-excelente {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .badge-bueno {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-
-        .badge-regular {
-            background: #fef9c3;
-            color: #854d0e;
-        }
-
-        .badge-deficiente {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #e5e7eb;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            border-radius: 4px;
-            transition: width 0.3s;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-secondary);
-        }
-
-        @media (max-width: 768px) {
-            .header { flex-direction: column; align-items: flex-start; }
-            .data-table { font-size: 12px; }
-            .data-table th, .data-table td { padding: 10px 12px; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <div>
-                <h1>Resumen de Cumplimiento</h1>
-                <p style="color: rgba(255,255,255,0.7); margin-top: 4px;">Solo visible para docentes</p>
-            </div>
-            <div class="header-actions">
-                <form class="filters" method="get" action="/resumen">
-                    <select name="cohorte" onchange="this.form.submit()">
-                        {% for cohorte in cohortes %}
-                        <option value="{{ cohorte.id }}" {% if selected_cohorte and selected_cohorte.id == cohorte.id %}selected{% endif %}>
-                            {{ cohorte.nombre }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </form>
-                <a href="/api/exportar-excel{% if selected_cohorte %}?cohorte={{ selected_cohorte.id }}{% endif %}" class="btn btn-primary">
-                    📊 Exportar Excel
-                </a>
-                <a href="/" class="btn btn-secondary">
-                    ← Volver al Dashboard
-                </a>
-            </div>
+    <!-- Header -->
+    <div class="bg-slate-800 text-white p-6 rounded-xl mb-6 flex justify-between items-center flex-wrap gap-4">
+        <div>
+            <h1 class="text-2xl font-semibold">Resumen de Cumplimiento</h1>
+            <p class="text-white/70 mt-1">Solo visible para docentes</p>
         </div>
-
-        {% if resumen %}
-        <!-- Estadísticas -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">Total Estudiantes</div>
-                <div class="stat-value">{{ resumen | length }}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Promedio Índice Final</div>
-                <div class="stat-value">{{ (resumen | map(attribute='indice_final') | sum / resumen | length) | round(1) }}%</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Excelente/Bueno</div>
-                <div class="stat-value">{{ resumen | selectattr('clasificacion', 'in', ['Excelente', 'Bueno']) | list | length }}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">En Riesgo</div>
-                <div class="stat-value" style="color: var(--color-rojo);">{{ resumen | selectattr('clasificacion', 'in', ['Regular', 'Deficiente']) | list | length }}</div>
-            </div>
-        </div>
-
-        <!-- Tabla de resumen -->
-        <div class="table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Estudiante</th>
-                        <th>% Semanales</th>
-                        <th>% Integradores</th>
-                        <th>Índice Participación</th>
-                        <th>Índice Final</th>
-                        <th>Clasificación</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for estudiante in resumen %}
-                    <tr>
-                        <td>{{ loop.index }}</td>
-                        <td>
-                            <div class="student-name">{{ estudiante.apellido }}, {{ estudiante.nombre }}</div>
-                            <div class="student-email">{{ estudiante.email }}</div>
-                        </td>
-                        <td>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="min-width: 40px;">{{ estudiante.porcentaje_semanales }}%</span>
-                                <div class="progress-bar" style="width: 60px;">
-                                    <div class="progress-fill" style="width: {{ estudiante.porcentaje_semanales }}%; background: var(--color-verde);"></div>
-                                </div>
-                            </div>
-                            <small style="color: var(--text-secondary);">{{ estudiante.semanales_a_tiempo }}/{{ estudiante.total_semanales }}</small>
-                        </td>
-                        <td>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="min-width: 40px;">{{ estudiante.porcentaje_integradores }}%</span>
-                                <div class="progress-bar" style="width: 60px;">
-                                    <div class="progress-fill" style="width: {{ estudiante.porcentaje_integradores }}%; background: var(--color-azul);"></div>
-                                </div>
-                            </div>
-                            <small style="color: var(--text-secondary);">{{ estudiante.integradores_a_tiempo }}/{{ estudiante.total_integradores }}</small>
-                        </td>
-                        <td>
-                            <strong>{{ estudiante.indice_participacion }}%</strong>
-                        </td>
-                        <td>
-                            <strong style="font-size: 16px; color: {% if estudiante.indice_final >= 90 %}var(--color-verde){% elif estudiante.indice_final >= 70 %}var(--color-azul){% elif estudiante.indice_final >= 50 %}var(--color-amarillo){% else %}var(--color-rojo){% endif %};">
-                                {{ estudiante.indice_final }}%
-                            </strong>
-                        </td>
-                        <td>
-                            <span class="badge badge-{{ estudiante.clasificacion.lower() }}">
-                                {{ estudiante.clasificacion }}
-                            </span>
-                        </td>
-                    </tr>
+        <div class="flex gap-3 items-center flex-wrap">
+            <form class="flex gap-3 items-center" method="get" action="/resumen">
+                <label for="cohorte-resumen" class="sr-only">Cohorte</label>
+                <select id="cohorte-resumen" name="cohorte" onchange="this.form.submit()"
+                    class="px-4 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white text-sm cursor-pointer">
+                    {% for cohorte in cohortes %}
+                    <option value="{{ cohorte.id }}"
+                        style="background: #1e293b; color: white;"
+                        {% if selected_cohorte and selected_cohorte.id == cohorte.id %}selected{% endif %}>
+                        {{ cohorte.nombre }}
+                    </option>
                     {% endfor %}
-                </tbody>
-            </table>
+                </select>
+            </form>
+            <a href="/api/exportar-excel{% if selected_cohorte %}?cohorte={{ selected_cohorte.id }}{% endif %}"
+               class="px-5 py-2.5 rounded-lg text-sm font-medium cursor-pointer border-none transition-colors inline-flex items-center gap-2 bg-green-500 text-white hover:bg-green-600">
+                📊 Exportar Excel
+            </a>
+            <a href="/"
+               class="px-5 py-2.5 rounded-lg text-sm font-medium cursor-pointer border border-white/20 transition-colors inline-flex items-center gap-2 bg-white/10 text-white hover:bg-white/20">
+                ← Volver al Dashboard
+            </a>
         </div>
-
-        <!-- Leyenda de cálculo -->
-        <div style="margin-top: 24px; padding: 20px; background: var(--bg-card); border-radius: 12px;">
-            <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--text-secondary);">Fórmula de Cálculo</h3>
-            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-                <strong>Índice Final</strong> = (TP Integrador 1 × 40%) + (TP Integrador 2 × 40%) + (Participación × 20%)<br>
-                <strong>Participación</strong> = Entregas semanales a tiempo × 1.0 + Entregas tarde × 0.5<br>
-                <strong>Clasificación:</strong> Excelente (90-100%), Bueno (70-89%), Regular (50-69%), Deficiente (&lt;50%)
-            </p>
-        </div>
-        {% else %}
-        <div class="empty-state">
-            <h3>No hay datos para mostrar</h3>
-            <p>Selecciona una cohorte con estudiantes y actividades.</p>
-        </div>
-        {% endif %}
     </div>
 
-    <!-- Footer -->
-    <footer style="background: #1e293b; color: rgba(255,255,255,0.6); padding: 16px; text-align: center; font-size: 12px; margin-top: 24px;">
-        <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: center; align-items: center; gap: 16px; flex-wrap: wrap;">
-            <span>v1.0.0</span>
-            <span>|</span>
-            <span>Desarrollado por <a href="https://www.matiasbarreto.com" target="_blank" style="color: #60a5fa; text-decoration: none;">Matías Barreto</a></span>
-            <span>|</span>
-            <a href="/faq" style="color: #60a5fa; text-decoration: none;">¿Necesitas ayuda?</a>
+    {% if resumen %}
+    <!-- Estadísticas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white p-5 rounded-xl shadow-sm">
+            <div class="text-xs uppercase tracking-wide text-gray-500 mb-2">Total Estudiantes</div>
+            <div class="text-[28px] font-bold text-gray-800">{{ resumen | length }}</div>
         </div>
-    </footer>
-</body>
-</html>
+        <div class="bg-white p-5 rounded-xl shadow-sm">
+            <div class="text-xs uppercase tracking-wide text-gray-500 mb-2">Promedio Índice Final</div>
+            <div class="text-[28px] font-bold text-gray-800">{{ (resumen | map(attribute='indice_final') | sum / resumen | length) | round(1) }}%</div>
+        </div>
+        <div class="bg-white p-5 rounded-xl shadow-sm">
+            <div class="text-xs uppercase tracking-wide text-gray-500 mb-2">Excelente/Bueno</div>
+            <div class="text-[28px] font-bold text-gray-800">{{ resumen | selectattr('clasificacion', 'in', ['Excelente', 'Bueno']) | list | length }}</div>
+        </div>
+        <div class="bg-white p-5 rounded-xl shadow-sm">
+            <div class="text-xs uppercase tracking-wide text-gray-500 mb-2">En Riesgo</div>
+            <div class="text-[28px] font-bold text-red-500">{{ resumen | selectattr('clasificacion', 'in', ['Regular', 'Deficiente']) | list | length }}</div>
+        </div>
+    </div>
+
+    <!-- Tabla de resumen -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <table class="w-full border-collapse text-sm">
+            <thead>
+                <tr>
+                    <th class="th-label">#</th>
+                    <th class="th-label">Estudiante</th>
+                    <th class="th-label">% Semanales</th>
+                    <th class="th-label">% Integradores</th>
+                    <th class="th-label">Índice Participación</th>
+                    <th class="th-label">Índice Final</th>
+                    <th class="th-label">Clasificación</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for estudiante in resumen %}
+                <tr class="hover:bg-slate-50 border-b border-gray-100">
+                    <td class="px-4 py-3.5">{{ loop.index }}</td>
+                    <td class="px-4 py-3.5">
+                        <div class="font-semibold text-gray-800">{{ estudiante.apellido }}, {{ estudiante.nombre }}</div>
+                        <div class="text-xs text-gray-500">{{ estudiante.email }}</div>
+                    </td>
+                    <td class="px-4 py-3.5">
+                        <div class="flex items-center gap-2">
+                            <span class="min-w-[40px] text-sm">{{ estudiante.porcentaje_semanales }}%</span>
+                            <div class="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div class="h-full rounded-full bg-green-500 transition-all"
+                                     style="width: {{ estudiante.porcentaje_semanales }}%;"></div>
+                            </div>
+                        </div>
+                        <small class="text-gray-500">{{ estudiante.semanales_a_tiempo }}/{{ estudiante.total_semanales }}</small>
+                    </td>
+                    <td class="px-4 py-3.5">
+                        <div class="flex items-center gap-2">
+                            <span class="min-w-[40px] text-sm">{{ estudiante.porcentaje_integradores }}%</span>
+                            <div class="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div class="h-full rounded-full bg-blue-500 transition-all"
+                                     style="width: {{ estudiante.porcentaje_integradores }}%;"></div>
+                            </div>
+                        </div>
+                        <small class="text-gray-500">{{ estudiante.integradores_a_tiempo }}/{{ estudiante.total_integradores }}</small>
+                    </td>
+                    <td class="px-4 py-3.5">
+                        <strong>{{ estudiante.indice_participacion }}%</strong>
+                    </td>
+                    <td class="px-4 py-3.5">
+                        <strong class="text-base
+                            {% if estudiante.indice_final >= 90 %}text-green-500
+                            {% elif estudiante.indice_final >= 70 %}text-blue-500
+                            {% elif estudiante.indice_final >= 50 %}text-yellow-500
+                            {% else %}text-red-500{% endif %}">
+                            {{ estudiante.indice_final }}%
+                        </strong>
+                    </td>
+                    <td class="px-4 py-3.5">
+                        <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold
+                            {% if estudiante.clasificacion == 'Excelente' %}bg-green-100 text-green-800
+                            {% elif estudiante.clasificacion == 'Bueno' %}bg-blue-100 text-blue-800
+                            {% elif estudiante.clasificacion == 'Regular' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ estudiante.clasificacion }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Leyenda de cálculo -->
+    <div class="mt-6 p-5 bg-white rounded-xl shadow-sm">
+        <h3 class="text-sm mb-3 text-gray-500">Fórmula de Cálculo</h3>
+        <p class="text-sm text-gray-500 leading-relaxed">
+            <strong class="text-gray-800">Índice Final</strong> = (TP Integrador 1 × 40%) + (TP Integrador 2 × 40%) + (Participación × 20%)<br>
+            <strong class="text-gray-800">Participación</strong> = Entregas semanales a tiempo × 1.0 + Entregas tarde × 0.5<br>
+            <strong class="text-gray-800">Clasificación:</strong> Excelente (90-100%), Bueno (70-89%), Regular (50-69%), Deficiente (&lt;50%)
+        </p>
+    </div>
+
+    {% else %}
+    <div class="text-center py-16 px-5 text-gray-500">
+        <h3 class="text-lg mb-2 text-gray-700">No hay datos para mostrar</h3>
+        <p>Selecciona una cohorte con estudiantes y actividades.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

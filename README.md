@@ -235,12 +235,21 @@ Para modificar el Dashboard Flask sin usar Docker:
    source venv/bin/activate  # Linux/Mac
    # venv\Scripts\activate   # Windows
    pip install -r dashboard/requirements.txt
+   pip install python-dotenv
    ```
-3. Genera una base de datos de prueba con datos simulados (Opcional):
+3. Configura la variable de entorno apuntando a la base de datos de prueba incluida en el repositorio:
+   ```bash
+   # Linux/Mac
+   export NOCODB_DB_PATH="test_data/noco.db"
+
+   # Windows (PowerShell)
+   $env:NOCODB_DB_PATH = "test_data\noco.db"
+   ```
+4. Genera una base de datos de prueba con datos simulados (Opcional):
    ```bash
    python seed_db.py
    ```
-4. Ejecuta el servidor Flask de desarrollo:
+5. Ejecuta el servidor Flask de desarrollo:
    ```bash
    flask --app dashboard.app run --debug
    ```

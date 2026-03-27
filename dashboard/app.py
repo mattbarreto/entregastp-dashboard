@@ -26,6 +26,10 @@ FILTRAR_ACTIVAS = os.environ.get('COHORTE_FILTRAR_ACTIVAS', 'true').lower() == '
 ADMIN_USER = os.environ.get('ADMIN_USER', 'docente')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'entregas2026')
 
+if not os.environ.get('ADMIN_PASSWORD'):
+    logger.warning("[SEGURIDAD] ADMIN_PASSWORD no configurada. Usando password por defecto. "
+                   "Configura ADMIN_PASSWORD en .env para produccion.")
+
 # === AUTENTICACIÓN ===
 def check_auth(username, password):
     """Verifica si las credenciales coinciden con las del entorno."""

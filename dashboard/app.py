@@ -159,7 +159,9 @@ def discover_schema(conn: sqlite3.Connection) -> Dict[str, Dict[str, Any]]:
                 possible_fks = [c for c in physical_cols if parent_phys_base in c or parent.lower()[:-2] in c.lower()]
                 
                 if possible_fks:
-                    schema[child]['columns'][f'fk_{parent}'] = possible_fks[0]
+                    # Guardamos siempre como singular para coincidir con get_matrix_data
+                    norm_parent = parent.rstrip('s')
+                    schema[child]['columns'][f'fk_{norm_parent}'] = possible_fks[0]
                     fk_found = True
                 
                 if not fk_found:
@@ -170,7 +172,8 @@ def discover_schema(conn: sqlite3.Connection) -> Dict[str, Dict[str, Any]]:
                     
                     rev_fks = [c for c in parent_phys_cols if child_phys_base in c or child.lower()[:-2] in c.lower()]
                     if rev_fks:
-                        schema[child]['columns'][f'rev_fk_{parent}'] = rev_fks[0]
+                        norm_parent = parent.rstrip('s')
+                        schema[child]['columns'][f'rev_fk_{norm_parent}'] = rev_fks[0]
                         logger.info(f"Detectada relación inversa: {parent}.{rev_fks[0]} apunta a {child}")
 
         return schema
@@ -440,10 +443,11 @@ def get_column_name(schema: Dict, table_title: str, column_title: str) -> Option
             return c_phys
 
     # Intento 3: Si es una FK pre-calculada en discover_schema
-    if f"fk_{column_title}" in cols:
-        return cols[f"fk_{column_title}"]
-    if f"rev_fk_{column_title}" in cols:
-        return cols[f"rev_fk_{column_title}"]
+    norm_title = column_title.rstrip('s')
+    if f"fk_{norm_title}" in cols:
+        return cols[f"fk_{norm_title}"]
+    if f"rev_fk_{norm_title}" in cols:
+        return cols[f"rev_fk_{norm_title}"]
 
     # Intento 4: Alias predefinidos
     aliases = {

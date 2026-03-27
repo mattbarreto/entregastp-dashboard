@@ -11,21 +11,22 @@ def main():
     conn.row_factory = dict_factory
     cursor = conn.cursor()
 
-    print("=== NocoDB Final Verification ===")
+    print("=== ESTUDIANTES DATA CHECK ===")
+    cursor.execute("PRAGMA table_info(nc_oniw___Estudiantes)")
+    cols = [r['name'] for r in cursor.fetchall()]
     
-    # Tables
-    cursor.execute("SELECT id, title, table_name FROM nc_models_v2")
-    models = cursor.fetchall()
-    model_titles = {m['id']: m['title'] for m in models}
-    
-    for m in models:
-        print(f"\n[TABLE] {m['title']} ({m['table_name']})")
-        # Columns
-        cursor.execute("SELECT title, column_name, uidt FROM nc_columns_v2 WHERE fk_model_id = ?", (m['id'],))
-        cols = cursor.fetchall()
-        for c in cols:
-            if c['uidt'] == 'LinkToAnotherRecord' or c['column_name']:
-                print(f"  - {c['title']} | Phys: {c['column_name']} | Type: {c['uidt']}")
+    fk_col = next((c for c in cols if 'Cohortes_id' in c), None)
+    if fk_col:
+        print(f"Found FK Col: {fk_col}")
+        cursor.execute(f"SELECT COUNT(*) as count, {fk_col} FROM nc_oniw___Estudiantes GROUP BY {fk_col}")
+        print(f"Stats by Cohort ID: {cursor.fetchall()}")
+    else:
+        print("FK Col NOT FOUND in Estudiantes. Cols: ", cols)
+
+    print("\n=== ENTREGAS DATA CHECK ===")
+    cursor.execute("PRAGMA table_info(nc_oniw___Entregas)")
+    ent_cols = [r['name'] for r in cursor.fetchall()]
+    print(f"Cols in Entregas: {ent_cols}")
 
     conn.close()
 

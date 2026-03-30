@@ -645,6 +645,7 @@ def compute_cell(entrega: Optional[Dict], fecha_limite_str: Optional[str], now: 
 
     if estado == 'Corregido': return {'color': COLOR_VERDE, 'status': 'Corregido', 'label': '✓', 'tooltip': tooltip}
     if estado == 'Rehacer': return {'color': COLOR_AMARILLO, 'status': 'Rehacer', 'label': '↻', 'tooltip': tooltip}
+    if estado == 'Entregado tarde': return {'color': COLOR_AMARILLO, 'status': 'Entregado tarde', 'label': '⚠', 'tooltip': tooltip}
     if esta_tarde: return {'color': COLOR_AMARILLO, 'status': 'Tarde', 'label': '⚠', 'tooltip': tooltip}
     return {'color': COLOR_VERDE, 'status': 'Entregado', 'label': '✓', 'tooltip': tooltip}
 

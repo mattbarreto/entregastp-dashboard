@@ -247,6 +247,23 @@ ADMIN_PASSWORD=tu_contraseña_segura
 
 ---
 
+## 📧 Configuración de Email (Opcional)
+
+NocoDB puede enviar invitaciones y notificaciones por correo si se configura SMTP. Este proyecto viene preparado para Gmail:
+
+1. Usá una cuenta Gmail (personal o Google Workspace) con **verificación en 2 pasos** activada.
+2. Generá una **contraseña de aplicación** en [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords).
+3. Agregá estas variables en tu `.env`:
+   ```env
+   GMAIL_USER=tu-email@gmail.com
+   GMAIL_APP_PASSWORD=abcdefghijklmnop
+   ```
+4. Reiniciá los contenedores: `docker compose down && docker compose up -d`
+
+> **Nota:** La contraseña de aplicación se escribe toda junta, sin guiones ni espacios.
+
+---
+
 ## 💾 Backups Automáticos
 
 El repositorio incluye el script `backup.sh` diseñado específicamente para hacer copias de seguridad de la base de datos de NocoDB sin necesidad de detener los contenedores de Docker.

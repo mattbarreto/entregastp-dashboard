@@ -629,7 +629,7 @@ def parse_date(date_str: Optional[str]) -> Optional[datetime]:
 
 def compute_cell(entrega: Optional[Dict], fecha_limite_str: Optional[str], now: datetime) -> Dict:
     fecha_limite = parse_date(fecha_limite_str)
-    COLOR_VERDE, COLOR_AMARILLO, COLOR_NARANJA, COLOR_ROJO, COLOR_GRIS = '#22c55e', '#eab308', '#f97316', '#ef4444', '#d1d5db'
+    COLOR_CELESTE, COLOR_VERDE, COLOR_AMARILLO, COLOR_NARANJA, COLOR_ROJO, COLOR_GRIS = '#38bdf8', '#22c55e', '#eab308', '#f97316', '#ef4444', '#d1d5db'
     
     if not entrega:
         if fecha_limite and fecha_limite < now:
@@ -647,7 +647,7 @@ def compute_cell(entrega: Optional[Dict], fecha_limite_str: Optional[str], now: 
     if estado == 'Rehacer': return {'color': COLOR_NARANJA, 'status': 'Rehacer', 'label': '↻', 'tooltip': tooltip}
     if estado == 'Entregado tarde': return {'color': COLOR_AMARILLO, 'status': 'Entregado tarde', 'label': '⚠', 'tooltip': tooltip}
     if esta_tarde: return {'color': COLOR_AMARILLO, 'status': 'Tarde', 'label': '⚠', 'tooltip': tooltip}
-    return {'color': COLOR_VERDE, 'status': 'Entregado', 'label': '✓', 'tooltip': tooltip}
+    return {'color': COLOR_CELESTE, 'status': 'Entregado', 'label': '✓', 'tooltip': tooltip}
 
 
 @app.route('/')

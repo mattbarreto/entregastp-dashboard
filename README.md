@@ -45,7 +45,7 @@ A través de **NocoDB**, se generan formularios públicos para que los estudiant
 
 ## ✨ Características Principales
 
-- 📊 **Matriz Semafórica Visual:** Estado de entregas codificado por colores: Verde (a tiempo/corregido), Amarillo (tarde/rehacer), Rojo (vencido/no entregado), Gris (pendiente).
+- 📊 **Matriz Semafórica Visual:** Estado de entregas codificado por colores: Celeste (entregado), Verde (corregido), Amarillo (tarde), Naranja (rehacer), Rojo (no entregado), Gris (pendiente).
 - 🎯 **Métricas Inteligentes:** Cálculo de índices de cumplimiento ponderando automáticamente trabajos semanales vs. TPs integradores.
 - 👥 **Soporte Multi-Cohorte:** Gestiona múltiples comisiones o cursos simultáneamente, filtrando en vivo.
 - 📤 **Exportación a Excel:** Descarga de reportes detallados por cohorte con métricas de cada estudiante mediante `openpyxl`.

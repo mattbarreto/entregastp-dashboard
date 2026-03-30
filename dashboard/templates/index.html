@@ -137,7 +137,7 @@
                         {% for activity in activities %}
                         {% set cell = cells.get((student.id, activity.id)) %}
                         {% if cell %}
-                        <td class="status-cell tooltip border-b border-r border-gray-100 text-center cursor-pointer transition-transform w-10 h-10 min-w-[40px] min-h-[40px] status-{{ 'verde' if cell.color == '#22c55e' else 'amarillo' if cell.color == '#eab308' else 'naranja' if cell.color == '#f97316' else 'rojo' if cell.color == '#ef4444' else 'gris' }}"
+                        <td class="status-cell tooltip border-b border-r border-gray-100 text-center cursor-pointer transition-transform w-10 h-10 min-w-[40px] min-h-[40px] status-{{ 'celeste' if cell.color == '#38bdf8' else 'verde' if cell.color == '#22c55e' else 'amarillo' if cell.color == '#eab308' else 'naranja' if cell.color == '#f97316' else 'rojo' if cell.color == '#ef4444' else 'gris' }}"
                             data-tooltip="{{ cell.tooltip }}"
                             {% if cell.url %}onclick="window.open('{{ cell.url }}', '_blank')"{% endif %}>
                             {{ cell.label }}
@@ -172,8 +172,12 @@
 
     <div class="flex gap-5 justify-center mt-4 p-3 bg-white rounded-lg shadow-sm flex-wrap">
         <div class="flex items-center gap-2 text-sm">
+            <div class="w-4 h-4 rounded" style="background-color: #38bdf8;"></div>
+            <span>Entregado</span>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
             <div class="w-4 h-4 rounded bg-green-500"></div>
-            <span>Entregado / Corregido</span>
+            <span>Corregido</span>
         </div>
         <div class="flex items-center gap-2 text-sm">
             <div class="w-4 h-4 rounded bg-yellow-400"></div>
@@ -234,7 +238,7 @@
     const entregasPorEstudiante = {{ entregas_por_estudiante | tojson }};
 
     const ESTADO_COLOR = {
-        'Entregado':       '#22c55e',
+        'Entregado':       '#38bdf8',
         'Corregido':       '#22c55e',
         'Entregado tarde': '#eab308',
         'Rehacer':         '#f97316',

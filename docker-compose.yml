@@ -14,6 +14,14 @@ services:
     environment:
       - NC_DB=sqlite3:///usr/app/data/noco.db
       - NC_PUBLIC_URL=${NOCODB_PUBLIC_URL:-http://localhost:8080}
+      # --- SMTP Gmail ---
+      - NC_SMTP_FROM=${GMAIL_USER}
+      - NC_SMTP_HOST=smtp.gmail.com
+      - NC_SMTP_PORT=465
+      - NC_SMTP_USERNAME=${GMAIL_USER}
+      - NC_SMTP_PASSWORD=${GMAIL_APP_PASSWORD}
+      - NC_SMTP_SECURE=true
+      - NC_SMTP_IGNORE_TLS=false
     ports:
       - "8080:8080"
     # --- Traefik (descomentar en producción) ---

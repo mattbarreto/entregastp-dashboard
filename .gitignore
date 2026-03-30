@@ -1,21 +1,59 @@
-venv/
-__pycache__/
+# Workspace del agente — nunca commitear
+.agent-workspace/
+
+# Skills — instalación local únicamente
+skills/
+
+# Configuración del agente — solo local
+agents/
+CLAUDE.md
+AGENT_DOCS.md
+
+# Proyecto — archivos privados
+CREDENCIALES_PRIVADAS.md
+vps_check.py
 nocodb-data/
 *.db
 test_data/
-.env
-.pytest_cache/
-*.pyc
+
+# Python
+__pycache__/
+*.py[cod]
 *.pyo
 *.pyd
 .Python
+.env
+*.log
+venv/
+.venv/
 env/
 ENV/
-build/
-dist/
+.ipynb_checkpoints/
 *.egg-info/
 .installed.cfg
 *.egg
-CREDENCIALES_PRIVADAS.md
-vps_check.py
-AGENT_DOCS.md
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+
+# Data Science
+*.h5
+*.pkl
+*.model
+mlruns/
+.dvc/tmp/
+
+# Web / Node
+node_modules/
+.next/
+.nuxt/
+out/
+.cache/
+
+# SO / Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

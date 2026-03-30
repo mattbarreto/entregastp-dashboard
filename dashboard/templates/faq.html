@@ -155,8 +155,9 @@
         {% call faq_item("¿Cómo sé si una entrega fue tarde?") %}
             El sistema compara automáticamente la <strong>Fecha Entrega</strong> (cuando el estudiante envió) con la <strong>Fecha Límite</strong> de la actividad. En el dashboard se muestran:
             <ul class="mt-2 mb-2 pl-5 list-disc">
-                <li>🟢 Verde: Entregado a tiempo</li>
+                <li>🟢 Verde: Entregado a tiempo / Corregido</li>
                 <li>🟡 Amarillo: Entregado tarde</li>
+                <li>🟠 Naranja: Rehacer</li>
                 <li>🔴 Rojo: No entregado (vencido)</li>
             </ul>
         {% endcall %}

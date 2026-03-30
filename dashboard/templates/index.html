@@ -137,7 +137,7 @@
                         {% for activity in activities %}
                         {% set cell = cells.get((student.id, activity.id)) %}
                         {% if cell %}
-                        <td class="status-cell tooltip border-b border-r border-gray-100 text-center cursor-pointer transition-transform w-10 h-10 min-w-[40px] min-h-[40px] status-{{ 'verde' if cell.color == '#22c55e' else 'amarillo' if cell.color == '#eab308' else 'rojo' if cell.color == '#ef4444' else 'gris' }}"
+                        <td class="status-cell tooltip border-b border-r border-gray-100 text-center cursor-pointer transition-transform w-10 h-10 min-w-[40px] min-h-[40px] status-{{ 'verde' if cell.color == '#22c55e' else 'amarillo' if cell.color == '#eab308' else 'naranja' if cell.color == '#f97316' else 'rojo' if cell.color == '#ef4444' else 'gris' }}"
                             data-tooltip="{{ cell.tooltip }}"
                             {% if cell.url %}onclick="window.open('{{ cell.url }}', '_blank')"{% endif %}>
                             {{ cell.label }}
@@ -177,7 +177,11 @@
         </div>
         <div class="flex items-center gap-2 text-sm">
             <div class="w-4 h-4 rounded bg-yellow-400"></div>
-            <span>Entregado tarde / Rehacer</span>
+            <span>Entregado tarde</span>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+            <div class="w-4 h-4 rounded" style="background-color: #f97316;"></div>
+            <span>Rehacer</span>
         </div>
         <div class="flex items-center gap-2 text-sm">
             <div class="w-4 h-4 rounded bg-red-500"></div>
@@ -233,7 +237,7 @@
         'Entregado':       '#22c55e',
         'Corregido':       '#22c55e',
         'Entregado tarde': '#eab308',
-        'Rehacer':         '#eab308',
+        'Rehacer':         '#f97316',
     };
 
     function handleEscapeKey(e) {
